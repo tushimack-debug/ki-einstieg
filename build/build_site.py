@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
-"""Build the static KI-Einstieg site from data/jobs.json, data/events.json, data/companies.json.
+"""Build the static job-board site (brand name: data/brand.json) from data/jobs.json, data/events.json, data/companies.json.
 Usage: python3 build/build_site.py [OUTPUT_DIR]   (or SITE_DIR env; default ./site)"""
 import json, os, shutil, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import seo
 from collections import Counter
 from datetime import datetime
 from html import escape
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = Path(sys.argv[1] if len(sys.argv) > 1 else os.environ.get('SITE_DIR', ROOT / 'site'))
 ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23144948'/%3E%3Ctext x='10' y='44' font-size='36' fill='white'%3EKI%3C/text%3E%3C/svg%3E"
 ATS = 'Personio, Greenhouse, Lever, SmartRecruiters, Ashby, Recruitee, Workable, SAP SuccessFactors (RSS)'
+BRAND_CFG = json.loads((ROOT / 'data' / 'brand.json').read_text(encoding='utf-8'))
+BRAND = BRAND_CFG['name']
+SITE_URL = BRAND_CFG['site_url'].rstrip('/')
+BASE = (urlparse(SITE_URL).path.rstrip('/') or '') + '/'
 CONTACT = 'tushimack@gmail.com'
 MAIL = f'<a href="mailto:{CONTACT}">{CONTACT}</a>'
 IMPRESSUM = (
@@ -18,7 +25,7 @@ IMPRESSUM = (
     '<h2>Angaben gemäß § 5 DDG</h2>'
     '<p>Tom Mack<br>Pfälzer Straße 20b<br>91052 Erlangen<br>Deutschland</p>'
     f'<h2>Kontakt</h2><p>E-Mail: {MAIL}</p>'
-    '<p>KI-Einstieg wird von einer Privatperson betrieben. Eine Umsatzsteuer-Identifikationsnummer ist derzeit nicht vorhanden.</p>'
+    f'<p>{BRAND} wird von einer Privatperson betrieben. Eine Umsatzsteuer-Identifikationsnummer ist derzeit nicht vorhanden.</p>'
     '<h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>'
     '<p>Tom Mack, Pfälzer Straße 20b, 91052 Erlangen</p>'
     '<h2>Hinweis zu externen Links</h2>'
@@ -91,13 +98,23 @@ def de(d):
     except (TypeError, ValueError): return d or ''
 
 
-def page(title, body):
+def page(title, body, *, path='', description=None, robots='index,follow', jsonld=None, full_title=None, og_type='website'):
+    """path: URL path relative to the site root ('' = home, 'werkstudent/muenchen/' = clean URL directory)."""
+    full = full_title or f'{title} · {BRAND}'
+    desc = description or BRAND_CFG['description']
+    url = f'{SITE_URL}/{path}'
+    ld = ''.join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False).replace("</", "<\\/")}</script>' for x in (jsonld or []))
+    meta = (f'<meta name="description" content="{escape(desc)}"><meta name="robots" content="{robots}">'
+            f'<link rel="canonical" href="{escape(url)}">'
+            f'<meta property="og:type" content="{og_type}"><meta property="og:site_name" content="{escape(BRAND)}"><meta property="og:locale" content="de_DE">'
+            f'<meta property="og:title" content="{escape(full)}"><meta property="og:description" content="{escape(desc)}"><meta property="og:url" content="{escape(url)}">'
+            '<meta name="twitter:card" content="summary">')
     return f'''<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{escape(title)} · KI-Einstieg</title><meta name="description" content="Dein Berufseinstieg in KI: Werkstudent, Praktikum, Abschlussarbeit und Ausbildung in Deutschland, Österreich und der Schweiz.">
-<link rel="icon" href="{ICON}"><link rel="stylesheet" href="assets/style.css"></head>
-<body><header class="wrap"><a class="brand" href="index.html">KI-Einstieg<span aria-hidden="true"> ↗</span></a><nav aria-label="Hauptnavigation"><a href="index.html#stellen">Stellen entdecken</a><a href="index.html#events">Hackathons</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></header>
-<main class="wrap">{body}</main><footer class="wrap"><p>Stellen aus den öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen ({ATS}). Alle Rechte an den Anzeigen liegen bei den jeweiligen Unternehmen. Bewerbung immer direkt beim Unternehmen.</p><nav aria-label="Rechtliches"><a href="quellen.html">Quellen</a><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></footer></body></html>'''
+<base href="{BASE}"><title>{escape(full)}</title>{meta}
+<link rel="icon" href="{ICON}"><link rel="stylesheet" href="assets/style.css">{ld}</head>
+<body><header class="wrap"><a class="brand" href="./">{escape(BRAND)}<span aria-hidden="true"> ↗</span></a><nav aria-label="Hauptnavigation"><a href="./#stellen">Stellen entdecken</a><a href="./#events">Hackathons</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></header>
+<main class="wrap">{body}</main><footer class="wrap"><p>{escape(BRAND)}: Stellen aus den öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen ({ATS}). Alle Rechte an den Anzeigen liegen bei den jeweiligen Unternehmen. Bewerbung immer direkt beim Unternehmen.</p><nav aria-label="Rechtliches"><a href="quellen.html">Quellen</a><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></footer></body></html>'''
 
 
 def newsletter_html(action):
@@ -112,15 +129,15 @@ def newsletter_html(action):
             '<button type="submit">Anmelden</button></div>'
             '<input type="text" name="email_address_check" value="" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp">'
             '<input type="hidden" name="locale" value="de">'
-            '<p class="consent">Mit dem Absenden willigst du ein, dass wir dir den KI-Einstieg-Newsletter per E-Mail schicken. Du bekommst zuerst eine '
+            f'<p class="consent">Mit dem Absenden willigst du ein, dass wir dir den {escape(BRAND)}-Newsletter per E-Mail schicken. Du bekommst zuerst eine '
             'Bestätigungsmail (Double-Opt-in); erst nach deinem Klick wirst du eingetragen. Versand über Brevo (Sendinblue GmbH, Berlin). '
             'Abmelden geht jederzeit über den Link in jeder Mail. Details in der <a href="datenschutz.html#newsletter">Datenschutzerklärung</a>.</p>'
             '</form></section>')
 
 
-def simple_page(title, heading, text):
-    return page(title, f'<section class="hero"><p class="eyebrow">NEWSLETTER</p><h1>{heading}</h1><p class="tagline">{text}</p>'
-                       '<p><a href="index.html#stellen">Zu den Stellen →</a></p></section>')
+def simple_page(title, heading, text, path):
+    return page(title, path=path, robots='noindex,follow', body=f'<section class="hero"><p class="eyebrow">NEWSLETTER</p><h1>{heading}</h1><p class="tagline">{text}</p>'
+                       '<p><a href="./#stellen">Zu den Stellen →</a></p></section>')
 
 
 def options(values):
@@ -155,14 +172,26 @@ def main():
                 f'<p><strong>Für:</strong> {escape(e.get("audience", ""))}</p><p>{escape(e.get("description", ""))}</p>'
                 f'<a href="{escape(e["url"])}" target="_blank" rel="noopener noreferrer" aria-label="Zur Veranstaltung {escape(e["name"])} (Quelle)">Zur Veranstaltung ↗</a></article>')
 
+    seo_info = seo.generate(SITE, ROOT, jobs, companies, page, BRAND, SITE_URL)
+    (SITE / 'data' / 'jobs.json').write_text(json.dumps(jobs, ensure_ascii=False, indent=1), encoding='utf-8')
+    lbl = seo_info['label']
+    def hub(keys):
+        return ''.join(f'<li><a href="{v["path"]}">{escape(lbl(*k)[0])}</a> ({len(v["jobs"])})</li>' for k, v in keys)
+    il = seo_info['index_links']
+    popular = (f'<section id="suchen" class="links"><h2>Beliebte Suchen</h2><div class="link-cols">'
+               f'<div><h3>Nach Einstiegsart</h3><ul class="link-list">{hub([x for x in il if x[0][1] is None])}</ul></div>'
+               f'<div><h3>Nach Stadt</h3><ul class="link-list">{hub([x for x in il if x[0][0] is None])}</ul></div>'
+               f'<div><h3>Einstiegsart × Stadt</h3><ul class="link-list">{hub(sorted([x for x in il if x[0][0] and x[0][1]], key=lambda x: -len(x[1]["jobs"]))[:16])}</ul></div>'
+               '</div></section>')
     newsletter_section = newsletter_html(load('newsletter.json', {}).get('form_action', ''))
     data = json.dumps(jobs, ensure_ascii=False).replace('</', '<\\/').replace('&', '\\u0026')
-    body = f'''<section class="hero"><p class="eyebrow">DEIN NÄCHSTER SCHRITT</p><h1>KI braucht<br>deinen Einstieg.</h1><p class="tagline">Werkstudent, Praktikum, Abschlussarbeit &amp; Ausbildung in KI – in Deutschland, Österreich und der Schweiz.</p><div class="metrics"><p><strong>{len(jobs)}</strong> Stellen</p><p><strong>{firms}</strong> Unternehmen</p><p><strong>{cities}</strong> Städte</p><p><strong>{updated}</strong> Letzte Aktualisierung</p></div></section>
+    body = f'''<section class="hero"><p class="eyebrow">DEIN NÄCHSTER SCHRITT</p><h1>{escape(BRAND_CFG['slogan'])}</h1><p class="tagline">Werkstudent, Praktikum, Abschlussarbeit &amp; Ausbildung in KI – in Deutschland, Österreich und der Schweiz.</p><div class="metrics"><p><strong>{len(jobs)}</strong> Stellen</p><p><strong>{firms}</strong> Unternehmen</p><p><strong>{cities}</strong> Städte</p><p><strong>{updated}</strong> Letzte Aktualisierung</p></div></section>
 <section id="stellen"><h2>Finde deinen Platz in der KI.</h2><form id="filters" class="filters"><label>Typ<select id="type"><option value="">Alle Typen</option>{options(types)}</select></label><label>Region<select id="region"><option value="">Alle Regionen</option>{options(regions)}</select></label><label class="search">Stadt, Unternehmen oder Titel<input id="search" type="search" placeholder="z. B. Berlin oder Machine Learning"></label><label class="check"><input id="remote" type="checkbox"> Remote/Homeoffice</label><label class="check"><input id="recent" type="checkbox"> Nur letzte 14 Tage</label></form><p id="result-count" role="status" aria-live="polite"></p><div id="jobs" class="grid"></div><button id="load-more" type="button" hidden>Mehr laden</button><noscript><p>Bitte JavaScript für die Stellenfilter aktivieren. Alle Stellen stehen auch als <a href="data/jobs.json">JSON-Datei</a> bereit.</p></noscript></section>
 <section id="events"><p class="eyebrow">GEMEINSAM LOSLEGEN</p><h2>Hackathons &amp; Wettbewerbe</h2><div class="grid">{''.join(event_card(e) for e in events)}</div></section>
+{popular}
 {newsletter_section}
 <script type="application/json" id="jobs-data">{data}</script><script src="assets/app.js" defer></script>'''
-    (SITE / 'index.html').write_text(page('Stellen entdecken', body), encoding='utf-8')
+    (SITE / 'index.html').write_text(page('Stellen entdecken', body, full_title=f'{BRAND}: KI Jobs für Einsteiger – Werkstudent, Praktikum & Abschlussarbeit in KI/AI'), encoding='utf-8')
 
     per = Counter(j['company'] for j in jobs)
     def link(c): return f'<a href="{escape(c["careers_url"])}" target="_blank" rel="noopener noreferrer">{escape(c["name"])}</a>'
@@ -170,29 +199,30 @@ def main():
     rows = ''.join(f'<li>{link(c)} · {escape(c["ats"])} · {per[c["name"]]} passende Stellen</li>' for c in with_jobs)
     others = ', '.join(link(c) for c in sorted((c for c in companies if not per.get(c['name'])), key=lambda c: c['name'].casefold()))
     rows += f'</ul><h2>Weitere beobachtete Feeds (derzeit ohne passende Einstiegsstelle)</h2><p class="small">{others}</p><ul>'
-    sources = (f'<h1>Quellen</h1><p>KI-Einstieg liest ausschließlich öffentliche, zum Einbinden gedachte Job-Feeds der Unternehmen ({ATS}) und verlinkt immer auf die Originalanzeige beim Unternehmen. '
+    sources = (f'<h1>Quellen</h1><p>{escape(BRAND)} liest ausschließlich öffentliche, zum Einbinden gedachte Job-Feeds der Unternehmen ({ATS}) und verlinkt immer auf die Originalanzeige beim Unternehmen. '
                f'Aktuell {len(companies)} Unternehmen, davon {len(per)} mit passenden Einstiegsstellen.</p><ul>{rows}</ul>'
                '<p>Unternehmen können die Entfernung ihrer Einträge oder die Aufnahme ihres Feeds anfordern. Kontakt: ' + MAIL + '.</p>')
-    (SITE / 'quellen.html').write_text(page('Quellen', sources), encoding='utf-8')
+    (SITE / 'quellen.html').write_text(page('Quellen', path='quellen.html', body=sources), encoding='utf-8')
 
     pricing = ('<h1>Talente für KI gewinnen.</h1><p class="note">Vorläufige Preise – Buchung derzeit per E-Mail.</p><div class="grid">'
                '<article class="card"><h2>Basis</h2><p class="price">49 €</p><p>30 Tage</p></article>'
                '<article class="card"><h2>Plus</h2><p class="price">89 €</p><p>60 Tage, hervorgehoben, im Newsletter</p></article>'
                '<article class="card"><h2>Premium</h2><p class="price">149 €</p><p>90 Tage, oben angepinnt, Newsletter + Social Post</p></article></div>'
                '<p>Alle Preise netto zzgl. MwSt.</p><p>Kostenlose Einträge für Hochschulen und gemeinnützige Hackathons.</p><p>Kontakt: ' + MAIL + '</p>')
-    (SITE / 'stelle-veroeffentlichen.html').write_text(page('Stelle veröffentlichen', pricing), encoding='utf-8')
-    (SITE / 'impressum.html').write_text(page('Impressum', IMPRESSUM), encoding='utf-8')
+    (SITE / 'stelle-veroeffentlichen.html').write_text(page('Stelle veröffentlichen', path='stelle-veroeffentlichen.html', body=pricing), encoding='utf-8')
+    (SITE / 'impressum.html').write_text(page('Impressum', IMPRESSUM, path='impressum.html', robots='noindex,follow'), encoding='utf-8')
     anon = load('newsletter.json', {}).get('tracking_anonymous') is True
     tracking = ('Wir haben deshalb in Brevo die anonyme Messung aktiviert: ' if anon else
                 'Deshalb aktivieren wir in Brevo vor dem Versand der ersten Ausgabe die anonyme Messung; ohne sie wird kein Newsletter verschickt. ')
-    (SITE / 'datenschutz.html').write_text(page('Datenschutz', DATENSCHUTZ.replace('{TRACKING}', tracking)), encoding='utf-8')
+    (SITE / 'datenschutz.html').write_text(page('Datenschutz', DATENSCHUTZ.replace('{TRACKING}', tracking), path='datenschutz.html', robots='noindex,follow'), encoding='utf-8')
     (SITE / 'newsletter-bestaetigen.html').write_text(simple_page('Fast geschafft', 'Fast geschafft!',
         'Wir haben dir eine E-Mail geschickt. Bitte klicke auf den Bestätigungslink darin, erst dann bist du eingetragen. '
-        'Nichts angekommen? Schau im Spam-Ordner nach.'), encoding='utf-8')
+        'Nichts angekommen? Schau im Spam-Ordner nach.', 'newsletter-bestaetigen.html'), encoding='utf-8')
     (SITE / 'newsletter-danke.html').write_text(simple_page('Danke', 'Danke, du bist dabei!',
         'Deine Anmeldung ist bestätigt. Ab jetzt bekommst du jeden Montag neue KI-Einstiegsstellen und Hackathons. '
-        'Abmelden kannst du dich jederzeit über den Link in jeder Mail.'), encoding='utf-8')
-    print(f'Statische Website erstellt: {SITE}')
+        'Abmelden kannst du dich jederzeit über den Link in jeder Mail.', 'newsletter-danke.html'), encoding='utf-8')
+    print(f"Statische Website erstellt: {SITE} | {seo_info['jobs']} Stellenseiten ({seo_info['with_text']} mit Auszug), "
+          f"{len(seo_info['landing'])} Landingpages ({seo_info['noindex']} noindex), Sitemap {seo_info['sitemap']} URLs")
 
 
 if __name__ == '__main__':

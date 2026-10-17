@@ -9,6 +9,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+BRAND_CFG = json.loads((ROOT / 'data/brand.json').read_text(encoding='utf-8'))
+BRAND = BRAND_CFG['name']
+SITE_URL = BRAND_CFG['site_url'].rstrip('/')
 OUT = ROOT / 'newsletter'
 TYPE_ORDER = ['Werkstudent', 'Praktikum', 'Abschlussarbeit', 'Junior', 'Trainee', 'Ausbildung']
 MAX_PER_TYPE = {'Ausbildung / Duales Studium': 2}
@@ -49,9 +52,9 @@ def main():
         return de(e['start']) + (f" – {de(e['end'])}" if e.get('end') and e['end'] != e['start'] else '')
 
     md = [f'<!-- ENTWURF – nicht versendet. Erzeugt {datetime.now():%d.%m.%Y %H:%M} aus echten Daten. -->',
-          f'# KI-Einstieg Weekly · KW {int(w)}/{y}', '',
+          f'# {BRAND} Weekly · KW {int(w)}/{y}', '',
           f'Hi! 👋 Diese Woche ({monday:%d.%m.}–{sunday:%d.%m.%Y}) sind **{len(week_jobs)} neue KI-Einstiegsstellen** '
-          f'dazugekommen; insgesamt findest du gerade **{len(jobs)}** auf KI-Einstieg. Hier sind {len(picked)} frische, die uns aufgefallen sind:', '',
+          f'dazugekommen; insgesamt findest du gerade **{len(jobs)}** auf {BRAND}. Hier sind {len(picked)} frische, die uns aufgefallen sind:', '',
           f'## 💼 {len(picked)} frische Stellen', '']
     for j in picked:
         loc = (j['city'] or j.get('region') or 'Remote') + ({'AT': ' (AT)', 'CH': ' (CH)'}.get(j.get('country'), '')) + (' · Remote möglich' if j.get('remote') else '')
@@ -60,11 +63,12 @@ def main():
     for e in events:
         md.append(f"- **[{e['name']}]({e['url']})**: {when(e)}, {e['city']}  \n  {e.get('status','')}")
     md += ['', '## 💡 ' + TIP.split(':')[0], '', TIP.split(': ', 1)[1], '',
-           '---', 'Alle Stellen findest du auf KI-Einstieg. Quelle: die öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen; beworben wird immer direkt beim Unternehmen. '
+           '---', f'Alle Stellen findest du auf {BRAND}.'
+           ' Quelle: die öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen; beworben wird immer direkt beim Unternehmen. '
            'Angaben ohne Gewähr; maßgeblich ist die Originalanzeige.  ',
-           'Du bekommst diese Mail, weil du dich für den KI-Einstieg-Newsletter angemeldet hast. [Abmelden]({{ unsubscribe }})  ',
-           'KI-Einstieg · Tom Mack · Pfälzer Straße 20b · 91052 Erlangen · Deutschland · tushimack@gmail.com  ',
-           'Impressum: https://tushimack-debug.github.io/ki-einstieg/impressum.html']
+           f'Du bekommst diese Mail, weil du dich für den {BRAND}-Newsletter angemeldet hast. [Abmelden]({{{{ unsubscribe }}}})  ',
+           f'{BRAND} · Tom Mack · Pfälzer Straße 20b · 91052 Erlangen · Deutschland · tushimack@gmail.com  ',
+           'Impressum: {SITE_URL}/impressum.html']
     (OUT / f'{week}.md').write_text('\n'.join(md) + '\n', encoding='utf-8')
 
     h = html.escape
@@ -77,24 +81,24 @@ def main():
         f'<li style="margin-bottom:8px"><a href="{h(e["url"])}" style="color:#4338ca;font-weight:600">{h(e["name"])}</a><br>'
         f'<span style="color:#555;font-size:14px">{when(e)}, {h(e["city"])}. {h(e.get("status",""))}</span></li>' for e in events)
     doc = f'''<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>KI-Einstieg Weekly · KW {int(w)}/{y}</title></head>
+<title>{h(BRAND)} Weekly · KW {int(w)}/{y}</title></head>
 <body style="margin:0;background:#f4f4f7;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f2937">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:12px;padding:28px">
 <tr><td>
-<p style="margin:0;color:#6366f1;font-weight:700;letter-spacing:.04em;font-size:13px">KI-EINSTIEG WEEKLY · KW {int(w)}/{y}</p>
+<p style="margin:0;color:#6366f1;font-weight:700;letter-spacing:.04em;font-size:13px">{h(BRAND.upper())} WEEKLY · KW {int(w)}/{y}</p>
 <h1 style="font-size:24px;margin:8px 0 12px">Neue KI-Einstiegsjobs &amp; Hackathons</h1>
-<p style="line-height:1.55">Hi! 👋 Diese Woche ({monday:%d.%m.}–{sunday:%d.%m.%Y}) sind <b>{len(week_jobs)} neue KI-Einstiegsstellen</b> dazugekommen; insgesamt findest du gerade <b>{len(jobs)}</b> auf KI-Einstieg. Hier sind {len(picked)} frische, die uns aufgefallen sind:</p>
+<p style="line-height:1.55">Hi! 👋 Diese Woche ({monday:%d.%m.}–{sunday:%d.%m.%Y}) sind <b>{len(week_jobs)} neue KI-Einstiegsstellen</b> dazugekommen; insgesamt findest du gerade <b>{len(jobs)}</b> auf {BRAND}. Hier sind {len(picked)} frische, die uns aufgefallen sind:</p>
 <h2 style="font-size:18px;margin:24px 0 4px">💼 {len(picked)} frische Stellen</h2>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">{jobs_html}</table>
 <h2 style="font-size:18px;margin:24px 0 8px">🛠️ Hackathons &amp; Events</h2><ul style="padding-left:18px;margin:0">{ev_html}</ul>
 <h2 style="font-size:18px;margin:24px 0 8px">💡 Tipp der Woche</h2>
 <p style="line-height:1.55;background:#eef2ff;border-radius:8px;padding:12px 14px;margin:0">{h(TIP.split(": ",1)[1])}</p>
-<p style="color:#6b7280;font-size:12px;line-height:1.5;margin-top:28px;border-top:1px solid #eee;padding-top:12px">Quelle: die öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen; beworben wird immer direkt beim Unternehmen. Angaben ohne Gewähr; maßgeblich ist die Originalanzeige.<br>Du bekommst diese Mail, weil du dich für den KI-Einstieg-Newsletter angemeldet hast. <a href="{{{{ unsubscribe }}}}" style="color:#6b7280">Abmelden</a> · <a href="https://tushimack-debug.github.io/ki-einstieg/impressum.html" style="color:#6b7280">Impressum</a> · <a href="https://tushimack-debug.github.io/ki-einstieg/datenschutz.html" style="color:#6b7280">Datenschutz</a><br>KI-Einstieg · Tom Mack · Pfälzer Straße 20b · 91052 Erlangen · Deutschland · tushimack@gmail.com</p>
+<p style="color:#6b7280;font-size:12px;line-height:1.5;margin-top:28px;border-top:1px solid #eee;padding-top:12px">Quelle: die öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen; beworben wird immer direkt beim Unternehmen. Angaben ohne Gewähr; maßgeblich ist die Originalanzeige.<br>Du bekommst diese Mail, weil du dich für den {h(BRAND)}-Newsletter angemeldet hast. <a href="{{{{ unsubscribe }}}}" style="color:#6b7280">Abmelden</a> · <a href="{SITE_URL}/impressum.html" style="color:#6b7280">Impressum</a> · <a href="{SITE_URL}/datenschutz.html" style="color:#6b7280">Datenschutz</a><br>{h(BRAND)} · Tom Mack · Pfälzer Straße 20b · 91052 Erlangen · Deutschland · tushimack@gmail.com</p>
 </td></tr></table></td></tr></table></body></html>'''
     (OUT / f'{week}.html').write_text(doc, encoding='utf-8')
     (OUT / f'{week}.meta.json').write_text(json.dumps({'week': week, 'new_jobs': len(week_jobs), 'picked': len(picked), 'events': len(events),
-        'subject': f'KI-Einstieg Weekly KW {int(w)}: {len(week_jobs)} neue KI-Einstiegsstellen'}, ensure_ascii=False), encoding='utf-8')
+        'subject': f'{BRAND} Weekly KW {int(w)}: {len(week_jobs)} neue KI-Einstiegsstellen'}, ensure_ascii=False), encoding='utf-8')
     print(f'Newsletter {week}: {len(week_jobs)} neue Stellen in der Woche, {len(picked)} ausgewählt, {len(events)} Events -> {OUT}/{week}.md/.html')
 
 if __name__ == '__main__':

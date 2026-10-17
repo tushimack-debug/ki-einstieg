@@ -41,7 +41,9 @@ function render() {
     badges.append(node('span', job.type, 'badge'));
     if (['AT', 'CH'].includes(job.country)) badges.append(node('span', job.country, 'badge'));
     if (job.remote) badges.append(node('span', 'Homeoffice', 'badge remote'));
-    card.append(badges, node('h3', job.title), node('p', job.company, 'company'), node('p', [job.city, job.region].filter(Boolean).join(' · ') || 'Ort nicht angegeben'));
+    const heading = node('h3');
+    if (job.page) { const detail = node('a', job.title); detail.href = job.page; heading.append(detail); } else heading.textContent = job.title;
+    card.append(badges, heading, node('p', job.company, 'company'), node('p', [job.city, job.region].filter(Boolean).join(' · ') || 'Ort nicht angegeben'));
     const parsed = new Date(job.date);
     const time = node('time', Number.isNaN(parsed.getTime()) ? 'Datum unbekannt' : dateFormat.format(parsed));
     if (!Number.isNaN(parsed.getTime())) time.dateTime = job.date;

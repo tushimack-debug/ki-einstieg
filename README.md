@@ -28,3 +28,7 @@ Wichtige Schalter: `MAX_DETAILS` (SmartRecruiters-Detailabrufe pro Lauf), `FEED_
 - `newsletter/make_newsletter.py` – wöchentlicher Newsletter-Entwurf (wird nicht versendet)
 - `discovery/` – Skripte zum Finden und Prüfen öffentlicher Feeds
 - `.github/workflows/nightly.yml` – nächtlicher Build und Veröffentlichung über GitHub Pages
+
+## SEO-Seiten
+`build/seo.py` erzeugt bei jedem Build: Stellenseiten `/stellen/<slug>/` mit schema.org-JobPosting, Landingpages je Einstiegsart (`/werkstudent/`, `/praktikum/` …), je Stadt (`/ki-jobs/muenchen/`) und Art × Stadt (`/werkstudent/muenchen/`), dazu `sitemap.xml`, `robots.txt` und `404.html`. Seiten mit weniger als 2 Stellen sind `noindex` und fehlen in der Sitemap; Kombinationen ohne Stellen werden nicht erzeugt. Verschwundene Stellen verlieren ihre Seite beim nächsten Build.
+Markenname, Slogan und Basis-URL stehen zentral in `data/brand.json`.

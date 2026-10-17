@@ -19,9 +19,11 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
+BRAND_CFG = json.loads((ROOT / 'data/brand.json').read_text(encoding='utf-8'))
+BRAND = BRAND_CFG['name']
+SITE_URL = BRAND_CFG['site_url'].rstrip('/')
 API = 'https://api.brevo.com/v3'
-SITE = 'https://tushimack-debug.github.io/ki-einstieg'
-SENDER = {'name': 'KI-Einstieg', 'email': 'tushimack@gmail.com'}
+SENDER = {'name': BRAND, 'email': 'tushimack@gmail.com'}
 
 
 def brevo(method, path, body=None):
@@ -40,7 +42,7 @@ def brevo(method, path, body=None):
 
 def fetch_live():
     for name in ('jobs.json', 'events.json'):
-        with urllib.request.urlopen(f'{SITE}/data/{name}', timeout=60) as r:
+        with urllib.request.urlopen(f'{SITE_URL}/data/{name}', timeout=60) as r:
             (ROOT / 'data' / name).write_bytes(r.read())
 
 
@@ -66,7 +68,7 @@ def main():
 
     lst = brevo('GET', f'/contacts/lists/{list_id}')
     subs = int(lst.get('totalSubscribers') or 0)
-    name = f'KI-Einstieg Weekly {week}'
+    name = f'{BRAND} Weekly {week}'
     existing = [c for c in brevo('GET', '/emailCampaigns?limit=100&sort=desc').get('campaigns', []) if c.get('name') == name]
     checks = {'mind. 1 Abonnent:in': subs >= 1, 'mind. 1 neue Stelle': meta['new_jobs'] >= 1,
               'anonyme Messung aktiv (tracking_anonymous)': cfg.get('tracking_anonymous') is True,

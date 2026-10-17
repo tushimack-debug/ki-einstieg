@@ -56,6 +56,7 @@ jobs:
         run: |
           base=https://tushimack-debug.github.io/ki-einstieg/data
           for f in jobs.json events.json stats.json; do curl -fsS "$base/$f" -o "data/$f"; done
+          curl -fsS "$base/job_texts.json" -o data/job_texts.json || echo 'job_texts.json noch nicht veröffentlicht (Stellenseiten ohne Auszug)'
           python3 -c "import json;j=json.load(open('data/jobs.json'));assert len(j)>=20, len(j)"
           python3 build/build_site.py site
 
