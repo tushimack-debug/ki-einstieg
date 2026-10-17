@@ -1,0 +1,90 @@
+[
+  {
+    "name": "Robotics & AI Hackathon (Siemens Healthineers, FAU, EELISA)",
+    "start": "2026-10-22",
+    "end": "2026-10-25",
+    "city": "Erlangen",
+    "audience": "Studierende, Promovierende & Professionals der EELISA-Community (FAU-Studierende sind automatisch EELISA)",
+    "description": "Vier Tage Prototypen bauen für reale Robotik- und KI-Challenges im Siemens Healthineers Innovation Center, mit Expert:innen aus Industrie und Forschung.",
+    "url": "https://www.fau.eu/university/universitys-profile/events/fau-innovation-days/",
+    "status": "Anmeldung über EELISA Digital Campus",
+    "verified": "2026-10-16"
+  },
+  {
+    "name": "KI.ckAthon Freiburg",
+    "start": "2026-11-03",
+    "end": "2026-11-03",
+    "city": "Freiburg",
+    "audience": "Azubis, Studierende, Schüler:innen (Workshop ab Klasse 8)",
+    "description": "Tages-Hackathon des Bildungswerks der Baden-Württembergischen Wirtschaft: KI-Lösungen mit No-Code-Tools, keine Programmierkenntnisse nötig. Kostenfrei.",
+    "url": "https://www.biwe.de/kickathon",
+    "status": "Online-Warmup am 23.10.2026",
+    "verified": "2026-10-16"
+  },
+  {
+    "name": "Leuphana AI Hackathon",
+    "start": "2026-11-05",
+    "end": "2026-11-06",
+    "city": "Lüneburg",
+    "audience": "Studierende und Gründungsinteressierte",
+    "description": "Zwei Tage, zwei Tracks (eigene Idee oder Unternehmens-Challenge): mit KI- und No-Code-Tools Prototypen bauen. Kostenfrei, Mittagessen inklusive.",
+    "url": "https://www.leuphana.de/kooperationen/leuphana-entrepreneurship-center/gruendungsunterstuetzung/leuphana-ai-hackathon-1.html",
+    "status": "Anmeldung erforderlich; Corporate-Track bis 22.10.",
+    "verified": "2026-10-16"
+  },
+  {
+    "name": "BWKI – Bundeswettbewerb Künstliche Intelligenz: Finale",
+    "start": "2026-11-13",
+    "end": "2026-11-13",
+    "city": "Tübingen",
+    "audience": "Schüler:innen",
+    "description": "Finale des bundesweiten KI-Wettbewerbs für Schüler:innen. Die Runde 2026 ist in der Jury-Phase; ideal, um die nächste Runde vorzubereiten.",
+    "url": "https://www.bw-ki.de/",
+    "status": "Einreichung 2026 geschlossen",
+    "verified": "2026-10-16"
+  },
+  {
+    "name": "KI.ckAthon Ulm",
+    "start": "2026-11-20",
+    "end": "2026-11-20",
+    "city": "Ulm",
+    "audience": "Azubis, Studierende, Schüler:innen",
+    "description": "Tages-Hackathon an der Technischen Hochschule Ulm, gefördert von Südwestmetall. Kostenfrei.",
+    "url": "https://www.biwe.de/kickathon",
+    "status": "Online-Warmup am 13.11.2026",
+    "verified": "2026-10-16"
+  },
+  {
+    "name": "AI-Thon 2.0 (CGI)",
+    "start": "2026-11-27",
+    "end": "2026-11-28",
+    "city": "Düsseldorf",
+    "audience": "Studierende aus ganz Deutschland, alle Fachrichtungen",
+    "description": "36-Stunden-Hackathon: Teams bauen KI-Prototypen für echte Unternehmens-Challenges, mit Coaching und Networking.",
+    "url": "https://www.cgi.com/de/de/event/karriere/ai-thon-2026",
+    "status": "Anmeldung bis 07.11.2026",
+    "verified": "2026-10-16"
+  },
+  {
+    "name": "KI.ckAthon Tübingen",
+    "start": "2026-12-01",
+    "end": "2026-12-01",
+    "city": "Tübingen",
+    "audience": "Azubis, Studierende, Schüler:innen",
+    "description": "Tages-Hackathon im Innovationszentrum Westspitze. Kostenfrei.",
+    "url": "https://www.biwe.de/kickathon",
+    "status": "Online-Warmup am 24.11.2026",
+    "verified": "2026-10-16"
+  },
+  {
+    "name": "KI.ckAthon Stuttgart",
+    "start": "2026-12-09",
+    "end": "2026-12-09",
+    "city": "Stuttgart",
+    "audience": "Azubis, Studierende, Schüler:innen",
+    "description": "Tages-Hackathon im Haus der Wirtschaft. Kostenfrei.",
+    "url": "https://www.biwe.de/kickathon",
+    "status": "Online-Warmup am 02.12.2026",
+    "verified": "2026-10-16"
+  }
+]

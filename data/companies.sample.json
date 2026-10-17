@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Personio",
+    "ats": "personio",
+    "slug": "personio",
+    "endpoint": "https://personio.jobs.personio.de/xml?language=de",
+    "careers_url": "https://www.personio.com/careers/",
+    "hq_country": "DE",
+    "hq_city": "",
+    "category": "",
+    "verified": true,
+    "jobs_total": 1,
+    "source_url": "https://personio.jobs.personio.de/xml?language=de"
+  },
+  {
+    "name": "appliedAI",
+    "ats": "personio",
+    "slug": "appliedai",
+    "endpoint": "https://appliedai.jobs.personio.de/xml?language=de",
+    "careers_url": "https://www.appliedai.de/karriere",
+    "hq_country": "DE",
+    "hq_city": "",
+    "category": "",
+    "verified": true,
+    "jobs_total": 9,
+    "source_url": "https://appliedai.jobs.personio.de/xml?language=de"
+  },
+  {
+    "name": "Celonis",
+    "ats": "greenhouse",
+    "slug": "celonis",
+    "endpoint": "https://boards-api.greenhouse.io/v1/boards/celonis/jobs?content=true",
+    "careers_url": "https://www.celonis.com/careers/",
+    "hq_country": "DE",
+    "hq_city": "",
+    "category": "",
+    "verified": true,
+    "jobs_total": 202,
+    "source_url": "https://boards-api.greenhouse.io/v1/boards/celonis/jobs?content=true"
+  },
+  {
+    "name": "Canonical",
+    "ats": "greenhouse",
+    "slug": "canonical",
+    "endpoint": "https://boards-api.greenhouse.io/v1/boards/canonical/jobs?content=true",
+    "careers_url": "https://canonical.com/careers",
+    "hq_country": "GB",
+    "hq_city": "",
+    "category": "",
+    "verified": true,
+    "jobs_total": 309,
+    "source_url": "https://boards-api.greenhouse.io/v1/boards/canonical/jobs?content=true"
+  },
+  {
+    "name": "Contentful",
+    "ats": "greenhouse",
+    "slug": "contentful",
+    "endpoint": "https://boards-api.greenhouse.io/v1/boards/contentful/jobs?content=true",
+    "careers_url": "https://boards.greenhouse.io/contentful",
+    "hq_country": "DE",
+    "hq_city": "",
+    "category": "",
+    "verified": true,
+    "jobs_total": 22,
+    "source_url": "https://boards-api.greenhouse.io/v1/boards/contentful/jobs?content=true"
+  }
+]

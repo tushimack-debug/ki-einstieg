@@ -1,0 +1,93 @@
+name: Nightly build
+
+# 05:15 Europe/Berlin in summer time (CEST = UTC+2) = 03:15 UTC.
+# In winter (CET = UTC+1) the same cron runs at 04:15 Berlin time. GitHub cron is UTC-only
+# and scheduled runs can start a few minutes late under load.
+on:
+  schedule:
+    - cron: '15 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      USE_BA: '0'
+      TZ: Europe/Berlin
+      MAX_DETAILS: '1200'   # SmartRecruiters detail requests per run; the rest backfill on later nights
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'   # pipeline uses only the standard library
+
+      # Persistent state between nights: SmartRecruiters job details (permanent cache) and first-seen dates.
+      # Feed bodies are not cached: they expire after 20 h, so a nightly run refetches them anyway.
+      - name: Restore caches
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/feeds_cache/details
+            data/seen.json
+          key: ki-state-${{ github.run_id }}
+          restore-keys: ki-state-
+
+      - name: Run pipeline
+        run: ./run.sh
+
+      - name: Save caches
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/feeds_cache/details
+            data/seen.json
+          key: ki-state-${{ github.run_id }}
+
+      - name: Summary
+        if: always()
+        run: |
+          tail -n 1 logs/run-*.log >> "$GITHUB_STEP_SUMMARY" || true
+          python3 -c "import json;s=json.load(open('data/feeds_summary.json'));print('Feeds ok', s['ok'], '/', s['total'], '| Fehler', s['error'], '| DACH-Stellen', s['rows'])" >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Upload newsletter draft and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newsletter-and-logs
+          path: |
+            newsletter/*.md
+            newsletter/*.html
+            logs/
+            data/feeds_summary.json
+            data/stats.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  deploy:
+    needs: build
+    if: vars.PAGES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

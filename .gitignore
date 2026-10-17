@@ -1,0 +1,49 @@
+# Laufzeit / Logs
+logs/
+*.log
+server.log
+__pycache__/
+*.pyc
+.venv*/
+
+# Build-Ausgaben (werden in CI neu erzeugt)
+site/
+site.prev/
+.site-build*/
+
+# Caches und Rohdaten (groß, jederzeit neu abrufbar)
+data/feeds_cache/
+data/feeds_lanes/
+data/details_cache/
+data/raw_feed_jobs.json
+data/llm_cache.json
+
+# Generierte Daten (Website-Artefakt enthält die aktuelle Version)
+data/jobs.json
+data/stats.json
+data/feeds_summary.json
+data/classify_report.json
+data/dropped_sample.json
+data/eval_sample.json
+
+# Arbeitsagentur-spezifisch (BA-Pfad ist deaktiviert, USE_BA=0)
+data/raw_jobs.json
+data/details_summary.json
+data/eval_sample_codex.json
+openapi.yaml
+
+# Codex-/Agenten-Protokolle
+codex*.log
+
+# Discovery-Rohdaten (Common-Crawl-URL-Listen, Probe-Rohergebnisse)
+discovery/cc/*
+!discovery/cc/cc_query.py
+discovery/*.log
+
+# Newsletter-Entwürfe (werden als Artefakt hochgeladen)
+newsletter/*.md
+newsletter/*.html
+
+# Lokal
+.env
+*.pem
