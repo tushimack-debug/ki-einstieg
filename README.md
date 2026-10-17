@@ -1,4 +1,4 @@
-# KI-Einstieg
+# KI-Laufbahn (Repo: ki-einstieg)
 
 Statische Stellenbörse für Einstiegsjobs in KI (Werkstudent, Praktikum, Abschlussarbeit, Ausbildung/Duales Studium, Trainee, Junior) in Deutschland, Österreich und der Schweiz.
 
