@@ -47,3 +47,6 @@ newsletter/*.html
 # Lokal
 .env
 *.pem
+
+# Interne Notizen (nicht veröffentlichen)
+notes/

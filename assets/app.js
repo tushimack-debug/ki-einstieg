@@ -59,7 +59,7 @@ function render() {
 filters.addEventListener('submit', event => event.preventDefault());
 filters.addEventListener('input', () => { limit = 30; render(); });
 more.addEventListener('click', () => { limit += 30; render(); });
-field('newsletter').addEventListener('submit', event => {
+if (field('newsletter')) field('newsletter').addEventListener('submit', event => {
   event.preventDefault();
   field('newsletter-message').textContent = 'Newsletter startet bald – Anmeldung noch nicht aktiv.';
 });

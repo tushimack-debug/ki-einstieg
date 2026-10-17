@@ -62,7 +62,7 @@ def main():
            '---', 'Alle Stellen findest du auf KI-Einstieg. Quelle: die öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen; beworben wird immer direkt beim Unternehmen. '
            'Angaben ohne Gewähr; maßgeblich ist die Originalanzeige.  ',
            'Du bekommst diese Mail, weil du dich für den KI-Einstieg-Newsletter angemeldet hast. [Abmelden](#)  ',
-           'Impressum: TODO']
+           'Impressum: https://tushimack-debug.github.io/ki-einstieg/impressum.html']
     (OUT / f'{week}.md').write_text('\n'.join(md) + '\n', encoding='utf-8')
 
     h = html.escape
@@ -89,7 +89,7 @@ def main():
 <h2 style="font-size:18px;margin:24px 0 8px">🛠️ Hackathons &amp; Events</h2><ul style="padding-left:18px;margin:0">{ev_html}</ul>
 <h2 style="font-size:18px;margin:24px 0 8px">💡 Tipp der Woche</h2>
 <p style="line-height:1.55;background:#eef2ff;border-radius:8px;padding:12px 14px;margin:0">{h(TIP.split(": ",1)[1])}</p>
-<p style="color:#6b7280;font-size:12px;line-height:1.5;margin-top:28px;border-top:1px solid #eee;padding-top:12px">Quelle: die öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen; beworben wird immer direkt beim Unternehmen. Angaben ohne Gewähr; maßgeblich ist die Originalanzeige.<br>Du bekommst diese Mail, weil du dich für den KI-Einstieg-Newsletter angemeldet hast. <a href="#" style="color:#6b7280">Abmelden</a> · Impressum: TODO</p>
+<p style="color:#6b7280;font-size:12px;line-height:1.5;margin-top:28px;border-top:1px solid #eee;padding-top:12px">Quelle: die öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen; beworben wird immer direkt beim Unternehmen. Angaben ohne Gewähr; maßgeblich ist die Originalanzeige.<br>Du bekommst diese Mail, weil du dich für den KI-Einstieg-Newsletter angemeldet hast. <a href="#" style="color:#6b7280">Abmelden</a> · <a href="https://tushimack-debug.github.io/ki-einstieg/impressum.html" style="color:#6b7280">Impressum</a></p>
 </td></tr></table></td></tr></table></body></html>'''
     (OUT / f'{week}.html').write_text(doc, encoding='utf-8')
     print(f'Newsletter {week}: {len(week_jobs)} neue Stellen in der Woche, {len(picked)} ausgewählt, {len(events)} Events -> {OUT}/{week}.md/.html')
