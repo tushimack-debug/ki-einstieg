@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: '15 3 * * *'
   workflow_dispatch:
+    inputs:
+      site_only:
+        description: 'Nur Website neu bauen (Stellen/Events von der Live-Seite übernehmen, kein Feed-Abruf; ~1 Min.)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -42,10 +47,20 @@ jobs:
           restore-keys: ki-state-
 
       - name: Run pipeline
+        if: ${{ !inputs.site_only }}
         run: ./run.sh
 
+      # Fast path for template/text changes: reuse the currently published data, rebuild only the HTML.
+      - name: Rebuild site from live data
+        if: ${{ inputs.site_only }}
+        run: |
+          base=https://tushimack-debug.github.io/ki-einstieg/data
+          for f in jobs.json events.json stats.json; do curl -fsS "$base/$f" -o "data/$f"; done
+          python3 -c "import json;j=json.load(open('data/jobs.json'));assert len(j)>=20, len(j)"
+          python3 build/build_site.py site
+
       - name: Save caches
-        if: always()
+        if: ${{ always() && !inputs.site_only }}
         uses: actions/cache/save@v4
         with:
           path: |
