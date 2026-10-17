@@ -105,9 +105,10 @@ def main():
 
     def event_card(e):
         when = de(e['start']) + (f" – {de(e['end'])}" if e.get('end') and e['end'] != e['start'] else '')
-        return (f'<article class="card"><span class="badge">{escape(e.get("status", ""))}</span><h3>{escape(e["name"])}</h3><p>{when} · {escape(e.get("city", ""))}</p>'
+        note = f'<p class="event-note"><strong>Hinweis:</strong> {escape(e["status"])}</p>' if e.get('status') else ''
+        return (f'<article class="card event-card"><h3>{escape(e["name"])}</h3><p class="event-when">{when} · {escape(e.get("city", ""))}</p>{note}'
                 f'<p><strong>Für:</strong> {escape(e.get("audience", ""))}</p><p>{escape(e.get("description", ""))}</p>'
-                f'<a href="{escape(e["url"])}" target="_blank" rel="noopener noreferrer">Zur Veranstaltung (Quelle) ↗</a></article>')
+                f'<a href="{escape(e["url"])}" target="_blank" rel="noopener noreferrer" aria-label="Zur Veranstaltung {escape(e["name"])} (Quelle)">Zur Veranstaltung ↗</a></article>')
 
     data = json.dumps(jobs, ensure_ascii=False).replace('</', '<\\/').replace('&', '\\u0026')
     body = f'''<section class="hero"><p class="eyebrow">DEIN NÄCHSTER SCHRITT</p><h1>KI braucht<br>deinen Einstieg.</h1><p class="tagline">Werkstudent, Praktikum, Abschlussarbeit &amp; Ausbildung in KI – in Deutschland, Österreich und der Schweiz.</p><div class="metrics"><p><strong>{len(jobs)}</strong> Stellen</p><p><strong>{firms}</strong> Unternehmen</p><p><strong>{cities}</strong> Städte</p><p><strong>{updated}</strong> Letzte Aktualisierung</p></div></section>
