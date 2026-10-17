@@ -1,0 +1,64 @@
+name: Weekly newsletter
+
+# Monday 06:00 UTC = 08:00 Berlin in summer (CEST) / 07:00 Berlin in winter (CET).
+# GitHub cron is UTC-only; 06:00 UTC never lands before 07:00 Berlin, and the nightly build (03:15 UTC) is done by then.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run (nichts senden) oder test (Testmail an test_to)'
+        type: choice
+        options: [dry-run, test]
+        default: dry-run
+      test_to:
+        description: 'Empfänger der Testmail'
+        default: 'tushimack@gmail.com'
+      week:
+        description: 'ISO-Woche, z. B. 2026-W42 (leer = letzte abgeschlossene Woche)'
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-newsletter
+  cancel-in-progress: false
+
+jobs:
+  newsletter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TZ: Europe/Berlin
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Real send only on the Monday schedule; manual runs can only dry-run or test-send.
+      # send_campaign.py additionally refuses to send without subscribers, new jobs, or anonymous tracking enabled.
+      - name: Build and send (or skip)
+        env:
+          MODE: ${{ github.event_name == 'schedule' && 'send' || inputs.mode }}
+          TEST_TO: ${{ inputs.test_to }}
+          WEEK: ${{ inputs.week }}
+        run: |
+          args=(--live-data)
+          [[ -n "${WEEK:-}" ]] && args+=(--week "$WEEK")
+          case "$MODE" in
+            send) args+=(--send) ;;
+            test) args+=(--test-to "$TEST_TO") ;;
+            *) ;;
+          esac
+          python3 newsletter/send_campaign.py "${args[@]}"
+      - name: Upload newsletter
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newsletter
+          path: newsletter/*-W*.*
+          retention-days: 30
+          if-no-files-found: warn

@@ -50,3 +50,4 @@ newsletter/*.html
 
 # Interne Notizen (nicht veröffentlichen)
 notes/
+newsletter/*.meta.json

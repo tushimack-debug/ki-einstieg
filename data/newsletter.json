@@ -1,0 +1,8 @@
+{
+ "_comment": "form_action = POST-URL des in Brevo angelegten Anmeldeformulars (https://….sibforms.com/serve/…). Leer = Formular wird nicht angezeigt.",
+ "form_action": "",
+ "tracking_anonymous": false,
+ "_comment2": "tracking_anonymous erst auf true setzen, wenn in Brevo unter Settings > Default settings > Tracking die anonyme Messung aktiviert ist. Ohne true verschickt send_campaign.py nichts.",
+ "list_id": 3,
+ "doi_template_id": 1
+}

@@ -40,7 +40,7 @@ DATENSCHUTZ = (
     '<a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub General Privacy Statement</a>.</p>'
     '<h2>3. Keine Cookies, kein Tracking</h2>'
     '<p>Diese Website setzt keine Cookies, verwendet keine Analyse- oder Tracking-Dienste und bindet keine externen Schriften, Skripte oder Inhalte '
-    'von Drittanbietern ein. Die Stellenfilter laufen vollständig lokal in Ihrem Browser.</p>'
+    'von Drittanbietern ein. Nur wenn Sie das Newsletter-Formular absenden, wird Ihre Eingabe an Brevo übermittelt (siehe Abschnitt 6). Die Stellenfilter laufen vollständig lokal in Ihrem Browser.</p>'
     '<h2>4. Externe Links</h2>'
     '<p>Stellenanzeigen verlinken auf die Seiten der jeweiligen Arbeitgeber. Erst wenn Sie einen solchen Link anklicken, werden Daten an den '
     'jeweiligen Anbieter übertragen; dafür gilt dessen Datenschutzerklärung.</p>'
@@ -48,7 +48,29 @@ DATENSCHUTZ = (
     '<p>Wenn Sie uns per E-Mail kontaktieren, verarbeiten wir Ihre Angaben (E-Mail-Adresse, Inhalt der Nachricht), um Ihre Anfrage zu beantworten '
     '(Art. 6 Abs. 1 lit. b bzw. f DSGVO). Die Daten werden gelöscht, sobald sie dafür nicht mehr erforderlich sind und keine gesetzlichen Aufbewahrungspflichten bestehen. '
     'Für den E-Mail-Empfang nutzen wir Google Mail (Google Ireland Limited).</p>'
-    '<h2>6. Newsletter</h2><p>Ein Newsletter ist geplant, derzeit aber nicht aktiv. Es werden keine Anmeldedaten erhoben.</p>'
+    '<h2 id="newsletter">6. Newsletter (Brevo)</h2>'
+    '<p><strong>Zweck und Daten.</strong> Mit unserem kostenlosen Newsletter informieren wir einmal pro Woche über neue Einstiegsstellen im Bereich KI '
+    'sowie über Hackathons und Veranstaltungen. Für die Anmeldung benötigen wir nur Ihre E-Mail-Adresse.</p>'
+    '<p><strong>Rechtsgrundlage.</strong> Der Versand erfolgt ausschließlich mit Ihrer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). '
+    'Sie können die Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, z. B. über den Abmeldelink in jeder Ausgabe oder per E-Mail an '
+    f'{MAIL}. Die Rechtmäßigkeit der bis zum Widerruf erfolgten Verarbeitung bleibt unberührt.</p>'
+    '<p><strong>Double-Opt-in und Protokollierung.</strong> Nach dem Absenden des Formulars erhalten Sie eine E-Mail mit einem Bestätigungslink. '
+    'Erst wenn Sie diesen Link anklicken, werden Sie in den Verteiler aufgenommen. Damit wir die Einwilligung nachweisen können, werden der Zeitpunkt '
+    'der Anmeldung und der Bestätigung sowie die dabei verwendete IP-Adresse protokolliert. Unbestätigte Anmeldungen erhalten keinen Newsletter.</p>'
+    '<p><strong>Dienstleister.</strong> Für Anmeldung und Versand nutzen wir Brevo, einen Dienst der Sendinblue GmbH, Köpenicker Straße 126, '
+    '10179 Berlin, Deutschland. Das Anmeldeformular sendet Ihre Eingabe direkt an Brevo; Brevo verarbeitet Ihre Daten in unserem Auftrag und '
+    'speichert sie auf Servern in der EU. Mit Brevo besteht ein Vertrag zur Auftragsverarbeitung (Art. 28 DSGVO), der Bestandteil der '
+    'Nutzungsbedingungen von Brevo ist. Weitere Informationen: '
+    '<a href="https://www.brevo.com/de/legal/privacypolicy/" target="_blank" rel="noopener noreferrer">Datenschutzerklärung von Brevo</a>.</p>'
+    '<p><strong>Öffnungs- und Klickmessung.</strong> Brevo kann standardmäßig erfassen, ob ein Newsletter geöffnet und welche Links angeklickt wurden. '
+    'Über die Schnittstelle (API) lässt sich diese Messung pro Kampagne nicht abschalten. '
+    '{TRACKING}'
+    'Öffnungen und Klicks werden dann nur als Gesamtzahlen erfasst und nicht Ihrer Person oder E-Mail-Adresse zugeordnet. Wir erstellen keine '
+    'individuellen Nutzerprofile.</p>'
+    '<p><strong>Speicherdauer.</strong> Ihre E-Mail-Adresse speichern wir, bis Sie sich abmelden. Nach der Abmeldung wird die Adresse aus dem '
+    'Verteiler entfernt; die Adresse und der Nachweis der früheren Einwilligung können bis zu drei Jahre gespeichert bleiben, damit wir die frühere '
+    'Einwilligung belegen und eine erneute Zusendung ausschließen können (Art. 6 Abs. 1 lit. c und f DSGVO). '
+    'Auf unserer Website werden für die Anmeldung keine Cookies gesetzt und keine Skripte von Brevo geladen.</p>'
     '<h2>7. Ihre Rechte</h2>'
     '<p>Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), '
     'Datenübertragbarkeit (Art. 20) sowie Widerspruch gegen Verarbeitungen auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (Art. 21). '
@@ -76,6 +98,29 @@ def page(title, body):
 <link rel="icon" href="{ICON}"><link rel="stylesheet" href="assets/style.css"></head>
 <body><header class="wrap"><a class="brand" href="index.html">KI-Einstieg<span aria-hidden="true"> ↗</span></a><nav aria-label="Hauptnavigation"><a href="index.html#stellen">Stellen entdecken</a><a href="index.html#events">Hackathons</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></header>
 <main class="wrap">{body}</main><footer class="wrap"><p>Stellen aus den öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen ({ATS}). Alle Rechte an den Anzeigen liegen bei den jeweiligen Unternehmen. Bewerbung immer direkt beim Unternehmen.</p><nav aria-label="Rechtliches"><a href="quellen.html">Quellen</a><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></footer></body></html>'''
+
+
+def newsletter_html(action):
+    head = '<section class="newsletter" id="newsletter"><h2>Dein nächster Einstieg im Postfach.</h2>'
+    if not action.startswith('https://') or 'sibforms.com/' not in action:
+        return head + '<p>Newsletter kommt bald.</p></section>'
+    # Plain HTML form, posts directly to Brevo's hosted form endpoint: no API key, no Brevo script, no cookies on this site.
+    return (head + '<p>Einmal pro Woche: neue KI-Einstiegsstellen (Werkstudent, Praktikum, Abschlussarbeit, Ausbildung) und Hackathons. Kostenlos, jederzeit abbestellbar.</p>'
+            f'<form class="signup" method="post" action="{escape(action)}" accept-charset="utf-8">'
+            '<label for="nl-email">E-Mail-Adresse</label><div class="email-row">'
+            '<input id="nl-email" type="email" name="EMAIL" required autocomplete="email" placeholder="du@beispiel.de">'
+            '<button type="submit">Anmelden</button></div>'
+            '<input type="text" name="email_address_check" value="" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp">'
+            '<input type="hidden" name="locale" value="de">'
+            '<p class="consent">Mit dem Absenden willigst du ein, dass wir dir den KI-Einstieg-Newsletter per E-Mail schicken. Du bekommst zuerst eine '
+            'Bestätigungsmail (Double-Opt-in); erst nach deinem Klick wirst du eingetragen. Versand über Brevo (Sendinblue GmbH, Berlin). '
+            'Abmelden geht jederzeit über den Link in jeder Mail. Details in der <a href="datenschutz.html#newsletter">Datenschutzerklärung</a>.</p>'
+            '</form></section>')
+
+
+def simple_page(title, heading, text):
+    return page(title, f'<section class="hero"><p class="eyebrow">NEWSLETTER</p><h1>{heading}</h1><p class="tagline">{text}</p>'
+                       '<p><a href="index.html#stellen">Zu den Stellen →</a></p></section>')
 
 
 def options(values):
@@ -110,11 +155,12 @@ def main():
                 f'<p><strong>Für:</strong> {escape(e.get("audience", ""))}</p><p>{escape(e.get("description", ""))}</p>'
                 f'<a href="{escape(e["url"])}" target="_blank" rel="noopener noreferrer" aria-label="Zur Veranstaltung {escape(e["name"])} (Quelle)">Zur Veranstaltung ↗</a></article>')
 
+    newsletter_section = newsletter_html(load('newsletter.json', {}).get('form_action', ''))
     data = json.dumps(jobs, ensure_ascii=False).replace('</', '<\\/').replace('&', '\\u0026')
     body = f'''<section class="hero"><p class="eyebrow">DEIN NÄCHSTER SCHRITT</p><h1>KI braucht<br>deinen Einstieg.</h1><p class="tagline">Werkstudent, Praktikum, Abschlussarbeit &amp; Ausbildung in KI – in Deutschland, Österreich und der Schweiz.</p><div class="metrics"><p><strong>{len(jobs)}</strong> Stellen</p><p><strong>{firms}</strong> Unternehmen</p><p><strong>{cities}</strong> Städte</p><p><strong>{updated}</strong> Letzte Aktualisierung</p></div></section>
 <section id="stellen"><h2>Finde deinen Platz in der KI.</h2><form id="filters" class="filters"><label>Typ<select id="type"><option value="">Alle Typen</option>{options(types)}</select></label><label>Region<select id="region"><option value="">Alle Regionen</option>{options(regions)}</select></label><label class="search">Stadt, Unternehmen oder Titel<input id="search" type="search" placeholder="z. B. Berlin oder Machine Learning"></label><label class="check"><input id="remote" type="checkbox"> Remote/Homeoffice</label><label class="check"><input id="recent" type="checkbox"> Nur letzte 14 Tage</label></form><p id="result-count" role="status" aria-live="polite"></p><div id="jobs" class="grid"></div><button id="load-more" type="button" hidden>Mehr laden</button><noscript><p>Bitte JavaScript für die Stellenfilter aktivieren. Alle Stellen stehen auch als <a href="data/jobs.json">JSON-Datei</a> bereit.</p></noscript></section>
 <section id="events"><p class="eyebrow">GEMEINSAM LOSLEGEN</p><h2>Hackathons &amp; Wettbewerbe</h2><div class="grid">{''.join(event_card(e) for e in events)}</div></section>
-<section class="newsletter"><h2>Dein nächster Einstieg im Postfach.</h2><p>Newsletter kommt bald.</p></section>
+{newsletter_section}
 <script type="application/json" id="jobs-data">{data}</script><script src="assets/app.js" defer></script>'''
     (SITE / 'index.html').write_text(page('Stellen entdecken', body), encoding='utf-8')
 
@@ -136,7 +182,16 @@ def main():
                '<p>Alle Preise netto zzgl. MwSt.</p><p>Kostenlose Einträge für Hochschulen und gemeinnützige Hackathons.</p><p>Kontakt: ' + MAIL + '</p>')
     (SITE / 'stelle-veroeffentlichen.html').write_text(page('Stelle veröffentlichen', pricing), encoding='utf-8')
     (SITE / 'impressum.html').write_text(page('Impressum', IMPRESSUM), encoding='utf-8')
-    (SITE / 'datenschutz.html').write_text(page('Datenschutz', DATENSCHUTZ), encoding='utf-8')
+    anon = load('newsletter.json', {}).get('tracking_anonymous') is True
+    tracking = ('Wir haben deshalb in Brevo die anonyme Messung aktiviert: ' if anon else
+                'Deshalb aktivieren wir in Brevo vor dem Versand der ersten Ausgabe die anonyme Messung; ohne sie wird kein Newsletter verschickt. ')
+    (SITE / 'datenschutz.html').write_text(page('Datenschutz', DATENSCHUTZ.replace('{TRACKING}', tracking)), encoding='utf-8')
+    (SITE / 'newsletter-bestaetigen.html').write_text(simple_page('Fast geschafft', 'Fast geschafft!',
+        'Wir haben dir eine E-Mail geschickt. Bitte klicke auf den Bestätigungslink darin, erst dann bist du eingetragen. '
+        'Nichts angekommen? Schau im Spam-Ordner nach.'), encoding='utf-8')
+    (SITE / 'newsletter-danke.html').write_text(simple_page('Danke', 'Danke, du bist dabei!',
+        'Deine Anmeldung ist bestätigt. Ab jetzt bekommst du jeden Montag neue KI-Einstiegsstellen und Hackathons. '
+        'Abmelden kannst du dich jederzeit über den Link in jeder Mail.'), encoding='utf-8')
     print(f'Statische Website erstellt: {SITE}')
 
 
