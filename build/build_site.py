@@ -58,6 +58,10 @@ DATENSCHUTZ = (
     '<h2 id="newsletter">6. Newsletter (Brevo)</h2>'
     '<p><strong>Zweck und Daten.</strong> Mit unserem kostenlosen Newsletter informieren wir einmal pro Woche über neue Einstiegsstellen im Bereich KI '
     'sowie über Hackathons und Veranstaltungen. Für die Anmeldung benötigen wir nur Ihre E-Mail-Adresse.</p>'
+    '<p><strong>Job-Alarm (optional).</strong> Wenn Sie im Formular eine Einstiegsart und/oder eine Stadt auswählen, speichern wir diese Auswahl '
+    'zusammen mit Ihrer E-Mail-Adresse bei Brevo und ordnen Sie einer entsprechenden Empfängergruppe zu, damit passende Stellen oben in Ihrer '
+    'wöchentlichen Ausgabe stehen. Die Auswahl ist freiwillig; Sie können sie jederzeit ändern (erneut mit neuer Auswahl anmelden) oder per E-Mail '
+    'löschen lassen. Es werden dafür keine weiteren Daten erhoben und kein Profil über Ihr Leseverhalten gebildet.</p>'
     '<p><strong>Rechtsgrundlage.</strong> Der Versand erfolgt ausschließlich mit Ihrer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). '
     'Sie können die Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, z. B. über den Abmeldelink in jeder Ausgabe oder per E-Mail an '
     f'{MAIL}. Die Rechtmäßigkeit der bis zum Widerruf erfolgten Verarbeitung bleibt unberührt.</p>'
@@ -122,15 +126,22 @@ def newsletter_html(action):
     if not action.startswith('https://') or 'sibforms.com/' not in action:
         return head + '<p>Newsletter kommt bald.</p></section>'
     # Plain HTML form, posts directly to Brevo's hosted form endpoint: no API key, no Brevo script, no cookies on this site.
+    # ALARM_TYP / ALARM_STADT are Brevo contact attributes (text); slugs match build/seo.py and newsletter/send_campaign.py.
+    alarm_types = ''.join(f'<option value="{t[0]}">{escape(t[1])}</option>' for t in seo.TYPES)
+    alarm_cities = ''.join(f'<option value="{c[0]}">{escape(c[1])}</option>' for c in seo.CITIES)
     return (head + '<p>Einmal pro Woche: neue KI-Einstiegsstellen (Werkstudent, Praktikum, Abschlussarbeit, Ausbildung) und Hackathons. Kostenlos, jederzeit abbestellbar.</p>'
             f'<form class="signup" method="post" action="{escape(action)}" accept-charset="utf-8">'
             '<label for="nl-email">E-Mail-Adresse</label><div class="email-row">'
             '<input id="nl-email" type="email" name="EMAIL" required autocomplete="email" placeholder="du@beispiel.de">'
             '<button type="submit">Anmelden</button></div>'
+            '<details class="alarm"><summary>Optional: persönlicher Job-Alarm</summary><p>Wähle Einstiegsart und/oder Stadt. Passende neue Stellen stehen dann oben in deiner wöchentlichen Mail.</p><div class="alarm-row">'
+            f'<label>Einstiegsart<select name="ALARM_TYP"><option value="">Alle</option>{alarm_types}</select></label>'
+            f'<label>Stadt<select name="ALARM_STADT"><option value="">Alle</option>{alarm_cities}</select></label></div></details>'
             '<input type="text" name="email_address_check" value="" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp">'
             '<input type="hidden" name="locale" value="de">'
             f'<p class="consent">Mit dem Absenden willigst du ein, dass wir dir den {escape(BRAND)}-Newsletter per E-Mail schicken. Du bekommst zuerst eine '
             'Bestätigungsmail (Double-Opt-in); erst nach deinem Klick wirst du eingetragen. Versand über Brevo (Sendinblue GmbH, Berlin). '
+            'Wenn du einen Job-Alarm wählst, speichern wir diese Auswahl, um deine Mail anzupassen. '
             'Abmelden geht jederzeit über den Link in jeder Mail. Details in der <a href="datenschutz.html#newsletter">Datenschutzerklärung</a>.</p>'
             '</form></section>')
 
@@ -183,10 +194,14 @@ def main():
                f'<div><h3>Nach Stadt</h3><ul class="link-list">{hub([x for x in il if x[0][0] is None])}</ul></div>'
                f'<div><h3>Einstiegsart × Stadt</h3><ul class="link-list">{hub(sorted([x for x in il if x[0][0] and x[0][1]], key=lambda x: -len(x[1]["jobs"]))[:16])}</ul></div>'
                '</div></section>')
+    city_count = Counter(j['city'] for j in jobs if j.get('city'))
+    city_opts = [c for c, n in city_count.most_common() if n >= 2]
+    field_opts = [f for f, _ in Counter(f for j in jobs for f in j.get('fields', [])).most_common()]
     newsletter_section = newsletter_html(load('newsletter.json', {}).get('form_action', ''))
-    data = json.dumps(jobs, ensure_ascii=False).replace('</', '<\\/').replace('&', '\\u0026')
+    slim = [{k: j.get(k) for k in ('title', 'company', 'city', 'region', 'type', 'remote', 'date', 'url', 'country', 'source_label', 'page', 'fields', 'ai_terms')} for j in jobs]
+    data = json.dumps(slim, ensure_ascii=False).replace('</', '<\\/').replace('&', '\\u0026')
     body = f'''<section class="hero"><p class="eyebrow">DEIN NÄCHSTER SCHRITT</p><h1>{escape(BRAND_CFG['slogan'])}</h1><p class="tagline">Werkstudent, Praktikum, Abschlussarbeit &amp; Ausbildung in KI – in Deutschland, Österreich und der Schweiz.</p><div class="metrics"><p><strong>{len(jobs)}</strong> Stellen</p><p><strong>{firms}</strong> Unternehmen</p><p><strong>{cities}</strong> Städte</p><p><strong>{updated}</strong> Letzte Aktualisierung</p></div></section>
-<section id="stellen"><h2>Finde deinen Platz in der KI.</h2><form id="filters" class="filters"><label>Typ<select id="type"><option value="">Alle Typen</option>{options(types)}</select></label><label>Region<select id="region"><option value="">Alle Regionen</option>{options(regions)}</select></label><label class="search">Stadt, Unternehmen oder Titel<input id="search" type="search" placeholder="z. B. Berlin oder Machine Learning"></label><label class="check"><input id="remote" type="checkbox"> Remote/Homeoffice</label><label class="check"><input id="recent" type="checkbox"> Nur letzte 14 Tage</label></form><p id="result-count" role="status" aria-live="polite"></p><div id="jobs" class="grid"></div><button id="load-more" type="button" hidden>Mehr laden</button><noscript><p>Bitte JavaScript für die Stellenfilter aktivieren. Alle Stellen stehen auch als <a href="data/jobs.json">JSON-Datei</a> bereit.</p></noscript></section>
+<section id="stellen"><h2>Finde deinen Platz in der KI.</h2><form id="filters" class="filters"><label>Typ<select id="type"><option value="">Alle Typen</option>{options(types)}</select></label><label>Stadt<select id="city"><option value="">Alle Städte</option>{options(city_opts)}</select></label><label>Region<select id="region"><option value="">Alle Regionen</option>{options(regions)}</select></label><label>Fachgebiet<select id="field"><option value="">Alle Fachgebiete</option>{options(field_opts)}</select></label><label class="search">Suche: Titel, Firma, Ort oder Thema<input id="search" type="search" placeholder="z. B. LLM, Bosch oder Hamburg"></label><label class="check"><input id="remote" type="checkbox"> Remote/Homeoffice</label><label class="check"><input id="recent" type="checkbox"> Nur letzte 14 Tage</label></form><p id="result-count" role="status" aria-live="polite"></p><div id="jobs" class="grid"></div><button id="load-more" type="button" hidden>Mehr laden</button><noscript><p>Bitte JavaScript für die Stellenfilter aktivieren. Alle Stellen stehen auch als <a href="data/jobs.json">JSON-Datei</a> bereit.</p></noscript></section>
 <section id="events"><p class="eyebrow">GEMEINSAM LOSLEGEN</p><h2>Hackathons &amp; Wettbewerbe</h2><div class="grid">{''.join(event_card(e) for e in events)}</div></section>
 {popular}
 {newsletter_section}

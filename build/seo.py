@@ -64,6 +64,23 @@ CITIES = [
     ('remote', 'Remote', None, 'Remote- und Homeoffice-Stellen kannst du unabhängig vom Wohnort machen, ideal neben dem Studium oder vor dem Umzug.'),
 ]
 
+# Fachgebiete für Filter und Job-Alarm (aus den erkannten KI-Begriffen)
+FIELDS = [
+    ('Machine Learning', ML_TERMS | {'maschinelles lernen'}, ML_TITLE),
+    ('Data Science', DS_TERMS, re.compile(r'data\s*scien', re.I)),
+    ('GenAI & LLM', {'LLM', 'generative KI/AI', 'large language model', 'RAG', 'prompt engineering', 'KI-Agent', 'AI agent', 'Sprachmodell', 'KI-Modell'},
+     re.compile(r'(?<![A-Za-z])(?:LLM|GenAI|Generative|Agent\w*|Prompt)(?![A-Za-z])', re.I)),
+    ('Computer Vision', {'computer vision'}, re.compile(r'computer\s*vision|bildverarbeitung', re.I)),
+    ('Robotik', set(), re.compile(r'robot', re.I)),
+]
+
+
+def job_fields(j):
+    terms = set(j.get('ai_terms', []))
+    out = [name for name, ts, rx in FIELDS if terms & ts or rx.search(j['title'])]
+    return out or ['KI allgemein']
+
+
 EMPLOYMENT = {'Werkstudent': ['PART_TIME'], 'Praktikum': ['INTERN'], 'Abschlussarbeit': ['INTERN'],
               'Ausbildung / Duales Studium': ['FULL_TIME'], 'Trainee': ['FULL_TIME'], 'Junior / Berufseinstieg': ['FULL_TIME']}
 COUNTRY_NAME = {'DE': 'Deutschland', 'AT': 'Österreich', 'CH': 'Schweiz'}
@@ -135,9 +152,21 @@ def de(d):
 def job_card(j):
     badges = f'<span class="badge">{escape(j["type"])}</span>' + (f'<span class="badge">{j["country"]}</span>' if j.get('country') in ('AT', 'CH') else '') \
         + ('<span class="badge remote">Homeoffice</span>' if j.get('remote') else '')
-    return (f'<article class="card"><div class="badges">{badges}</div><h3><a href="{j["page"]}">{escape(j["title"])}</a></h3>'
+    data = (f' data-search="{escape(" ".join([j["title"], j["company"], j.get("city") or "", j.get("region") or ""] + j.get("ai_terms", [])).lower())}"'
+            f' data-fields="{escape("|".join(j.get("fields", [])))}" data-remote="{1 if j.get("remote") else 0}"')
+    return (f'<article class="card"{data}><div class="badges">{badges}</div><h3><a href="{j["page"]}">{escape(j["title"])}</a></h3>'
             f'<p class="company">{escape(j["company"])}</p><p>{escape(loc_text(j))}</p><time datetime="{escape(j["date"])}">{de(j["date"])}</time>'
             f'<a href="{escape(j["url"])}" target="_blank" rel="noopener noreferrer">{escape(j.get("source_label") or "Zur Stelle bei " + j["company"])} ↗</a></article>')
+
+
+def filter_bar(items):
+    fields = sorted({f for j in items for f in j.get('fields', [])})
+    opts = ''.join(f'<option value="{escape(f)}">{escape(f)}</option>' for f in fields)
+    remote = '<label class="check"><input id="lf-remote" type="checkbox"> Remote/Homeoffice</label>' if any(j.get('remote') for j in items) else ''
+    return ('<form id="landing-filters" class="filters" hidden role="search"><label class="search">Suche in diesen Stellen'
+            '<input id="lf-search" type="search" placeholder="z. B. Python, LLM oder Firmenname"></label>'
+            f'<label>Fachgebiet<select id="lf-field"><option value="">Alle Fachgebiete</option>{opts}</select></label>{remote}</form>'
+            '<p id="lf-count" role="status" aria-live="polite"></p><script src="assets/filter.js" defer></script>')
 
 
 def employment_types(j, extra):
@@ -187,6 +216,7 @@ def generate(site, root, jobs, companies, page, brand, site_url):
     company_urls = {c['name']: c.get('careers_url') for c in companies if c.get('careers_url')}
     for j in jobs:
         j['page'] = job_path(j)
+        j['fields'] = job_fields(j)
     sitemap = [('', today), ('quellen.html', today), ('stelle-veroeffentlichen.html', today)]
     noindex_pages = []
 
@@ -263,7 +293,8 @@ def generate(site, root, jobs, companies, page, brand, site_url):
         body = (f'<nav class="crumbs" aria-label="Brotkrumen"><a href="./">{escape(brand)}</a>'
                 + (f' › <a href="{tslug}/">{escape(T[tslug][1])}</a>' if tslug and cslug else '') + f' › {escape(h1)}</nav>'
                 f'<section class="hero landing"><p class="eyebrow">{n} AKTUELLE {"STELLEN" if n != 1 else "STELLE"}</p><h1>{escape(h1)}</h1>{intro}</section>'
-                f'<section><div class="grid">{"".join(job_card(j) for j in items)}</div></section>'
+                + (filter_bar(items) if n >= 4 else '') +
+                f'<section><div class="grid" id="landing-jobs">{"".join(job_card(j) for j in items)}</div></section>'
                 f'<section class="links">{links}<p><a href="./#stellen">Alle Stellen mit Filtern durchsuchen →</a></p></section>')
         robots = 'index,follow' if v['index'] else 'noindex,follow'
         out = site / v['path']

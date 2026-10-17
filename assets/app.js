@@ -28,11 +28,15 @@ function render() {
   const now = new Date();
   const cutoff = new Date(now);
   cutoff.setDate(cutoff.getDate() - 14);
+  const words = search.split(/\s+/).filter(Boolean);
   const matches = jobs.filter(job => (!field('type').value || job.type === field('type').value)
+    && (!field('city').value || job.city === field('city').value)
     && (!field('region').value || job.region === field('region').value)
+    && (!field('field').value || (job.fields || []).includes(field('field').value))
     && (!field('remote').checked || job.remote)
     && (!field('recent').checked || (new Date(job.date) >= cutoff && new Date(job.date) <= now))
-    && (!search || [job.title, job.company, job.city, job.region].join(' ').toLocaleLowerCase('de').includes(search)));
+    && (!words.length || words.every(w => [job.title, job.company, job.city, job.region, ...(job.ai_terms || [])].join(' ').toLocaleLowerCase('de').includes(w))));
+  syncUrl();
   const ordered = diversify(matches);
   list.replaceChildren();
   for (const job of ordered.slice(0, limit)) {
@@ -58,11 +62,22 @@ function render() {
   field('result-count').textContent = `${matches.length} Stellen gefunden · ${Math.min(limit, matches.length)} angezeigt`;
   more.hidden = matches.length <= limit;
 }
+// Filterzustand in der URL (teilbar, kein Tracking): ?typ=&stadt=&region=&feld=&q=&remote=1&neu=1
+const KEYS = {type: 'typ', city: 'stadt', region: 'region', field: 'feld', search: 'q'};
+function syncUrl() {
+  const p = new URLSearchParams();
+  for (const [id, key] of Object.entries(KEYS)) if (field(id).value.trim()) p.set(key, field(id).value.trim());
+  if (field('remote').checked) p.set('remote', '1');
+  if (field('recent').checked) p.set('neu', '1');
+  history.replaceState(null, '', (p.toString() ? `?${p}` : location.pathname) + location.hash);
+}
+(() => {
+  const p = new URLSearchParams(location.search);
+  for (const [id, key] of Object.entries(KEYS)) if (p.has(key)) field(id).value = p.get(key);
+  field('remote').checked = p.get('remote') === '1';
+  field('recent').checked = p.get('neu') === '1';
+})();
 filters.addEventListener('submit', event => event.preventDefault());
 filters.addEventListener('input', () => { limit = 30; render(); });
 more.addEventListener('click', () => { limit += 30; render(); });
-if (field('newsletter')) field('newsletter').addEventListener('submit', event => {
-  event.preventDefault();
-  field('newsletter-message').textContent = 'Newsletter startet bald – Anmeldung noch nicht aktiv.';
-});
 render();
