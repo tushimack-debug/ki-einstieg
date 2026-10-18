@@ -12,6 +12,7 @@ function node(tag, text, className) {
   if (className) element.className = className;
   return element;
 }
+const ATS_LABELS = {personio: 'Personio', greenhouse: 'Greenhouse', lever: 'Lever', smartrecruiters: 'SmartRecruiters', ashby: 'Ashby', recruitee: 'Recruitee', workable: 'Workable', successfactors: 'SAP SuccessFactors'};
 const PAGE = 30, PER_COMPANY = 3;
 // Erste Seite: höchstens 3 Stellen pro Firma; weitere Stellen derselben Firma rücken nach hinten.
 function diversify(items) {
@@ -40,9 +41,10 @@ function render() {
   const ordered = diversify(matches);
   list.replaceChildren();
   for (const job of ordered.slice(0, limit)) {
-    const card = node('article', undefined, 'card');
+    const card = node('article', undefined, job.featured === true ? 'card featured' : 'card');
     const badges = node('div', undefined, 'badges');
     badges.append(node('span', job.type, 'badge'));
+    if (job.featured === true) badges.append(node('span', 'Anzeige', 'ad-label'));
     if (['AT', 'CH'].includes(job.country)) badges.append(node('span', job.country, 'badge'));
     if (job.remote) badges.append(node('span', 'Homeoffice', 'badge remote'));
     const heading = node('h3');
@@ -51,11 +53,14 @@ function render() {
     const parsed = new Date(job.date);
     const time = node('time', Number.isNaN(parsed.getTime()) ? 'Datum unbekannt' : dateFormat.format(parsed));
     if (!Number.isNaN(parsed.getTime())) time.dateTime = job.date;
-    const link = node('a', `${job.source_label || 'Zur Stelle bei ' + job.company} ↗`);
+    const retrieved = job.retrieved || new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Berlin'}).format(new Date());
+    const retrievalDate = new Date(retrieved + 'T12:00:00');
+    const note = node('p', `Quelle: Karriereseite von ${job.company} via ${ATS_LABELS[job.ats] || job.ats || 'Karriere-Feed'} · abgerufen am ${dateFormat.format(retrievalDate)} · Angaben ohne Gewähr`, 'source-note');
+    const link = node('a', 'Zur Originalanzeige ↗', 'button');
     link.href = job.url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    card.append(time, link);
+    card.append(time, note, link);
     list.append(card);
   }
   if (!matches.length) list.append(node('p', 'Keine passenden Stellen gefunden. Bitte passe die Filter an.'));

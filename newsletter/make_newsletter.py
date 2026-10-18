@@ -106,7 +106,7 @@ def main():
            'Angaben ohne Gewähr; maßgeblich ist die Originalanzeige.  ',
            f'Du bekommst diese Mail, weil du dich für den {BRAND}-Newsletter angemeldet hast. [Abmelden]({{{{ unsubscribe }}}})  ',
            f'{BRAND} · Tom Mack · Pfälzer Straße 20b · 91052 Erlangen · Deutschland · tushimack@gmail.com  ',
-           'Impressum: {SITE_URL}/impressum.html']
+           f'Impressum: {SITE_URL}/impressum.html']
     if not personal:
         (OUT / f'{week}.md').write_text('\n'.join(md) + '\n', encoding='utf-8')
 

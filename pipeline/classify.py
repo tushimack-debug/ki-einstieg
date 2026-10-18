@@ -5,8 +5,9 @@ import os
 import random
 import subprocess
 from common import cache_path, write_json
+from optout import is_opted_out
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, date as calendar_date, timedelta
 from pathlib import Path
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -92,6 +93,18 @@ def evidence(row):
 
 
 def classify(row, verdict=None):
+    if is_opted_out(row):
+        return None, 'Unternehmen ausgeschlossen'
+    today = datetime.now(ZoneInfo('Europe/Berlin')).date()
+    for field, cutoff, reason in (
+        ('retrieved', today - timedelta(days=int(os.environ.get('FEED_MAX_STALE_DAYS', '7'))), 'Feed-Cache zu alt'),
+        ('valid_through', today, 'Anzeige abgelaufen'),
+    ):
+        try:
+            if calendar_date.fromisoformat(row.get(field) or '') < cutoff:
+                return None, reason
+        except ValueError:
+            pass
     title = str(row.get('stellenangebotsTitel') or '')
     description, terms, title_ai, strong, borderline = evidence(row)
     relevant = (title_ai and (not description or terms or UNAMBIGUOUS.search(title) or not WEAK_TITLE.search(title))) or (not title_ai and strong and entry_kind(row))
@@ -129,6 +142,8 @@ def classify(row, verdict=None):
     job = dict(id=identifier, title=title, company=row.get('firma') or '', city=address.get('ort') or '', plz=address.get('plz') or '', region=REGIONS.get(region.casefold(), region.title()), type=kind, remote=bool(row.get('homeofficemoeglich')) or bool(re.search(r'remote|homeoffice', title, re.I)), date=str(date), url='https://www.arbeitsagentur.de/jobsuche/jobdetail/' + quote(identifier, safe=''), source='Bundesagentur für Arbeit', via_description=not title_ai, ai_terms=terms[:5])
     if row.get('_feed'):
         job.update(country=row.get('country', ''), ats=row.get('ats', ''), source=row['firma'], source_label=f"Zur Stelle bei {row['firma']}", url=row.get('url', ''), region=row.get('region', ''))
+    for field in ('retrieved', 'valid_through', 'company_slug', 'featured'):
+        if field in row: job[field] = row[field]
     return job, ('KI-Rolle mit unspezifischem Titel' if not title_ai else 'KI-Rolle im Titel')
 
 
@@ -170,6 +185,10 @@ def main():
     source = os.environ.get('SOURCE', 'feeds')
     if source not in ('feeds', 'ba'): raise SystemExit('SOURCE muss feeds oder ba sein')
     raw = json.loads((ROOT / ('data/raw_feed_jobs.json' if source == 'feeds' else 'data/raw_jobs.json')).read_text(encoding='utf-8'))
+    companies_path = ROOT / 'data/companies.json'
+    companies = json.loads(companies_path.read_text()) if companies_path.exists() else []
+    excluded_names = {c['name'].casefold() for c in companies if is_opted_out(c)}
+    raw = [r for r in raw if not is_opted_out(r) and (r.get('company') or r.get('firma') or '').casefold() not in excluded_names]
     if source == 'feeds':
         raw = [dict(r, _feed=True, stellenangebotsTitel=r['title'], firma=r['company'], referenznummer=r['id'], stellenlokationen=[{'adresse': {'ort': r['city'], 'region': r['region']}}], datumErsteVeroeffentlichung=r['date'], homeofficemoeglich=r['remote']) for r in raw]
     verdicts, llm_used = llm_verdicts(raw)

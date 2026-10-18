@@ -7,7 +7,8 @@ their sitemap entry on the next nightly build. Pages with < MIN_INDEX jobs are n
 and not in the sitemap; combinations with 0 jobs are not generated at all."""
 import hashlib, json, re, unicodedata
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo
 from html import escape
 from pathlib import Path
 
@@ -149,14 +150,45 @@ def de(d):
         return d or ''
 
 
+ATS_LABELS = {'personio': 'Personio', 'greenhouse': 'Greenhouse', 'lever': 'Lever',
+              'smartrecruiters': 'SmartRecruiters', 'ashby': 'Ashby', 'recruitee': 'Recruitee',
+              'workable': 'Workable', 'successfactors': 'SAP SuccessFactors'}
+
+
+def retrieved_date(j, fallback=None):
+    for value in (j.get('retrieved'), fallback):
+        try:
+            return date.fromisoformat((value or '')[:10]).isoformat()
+        except (ValueError, TypeError):
+            pass
+    return datetime.now(ZoneInfo('Europe/Berlin')).date().isoformat()
+
+
+def is_expired(j):
+    try:
+        return date.fromisoformat(j.get('valid_through') or '') < datetime.now(ZoneInfo('Europe/Berlin')).date()
+    except ValueError:
+        return False
+
+
+def source_note(j):
+    ats = ATS_LABELS.get(j.get('ats'), j.get('ats') or 'Karriere-Feed')
+    return (f'<p class="source-note">Quelle: Karriereseite von {escape(j["company"])} via {escape(ats)}'
+            f' · abgerufen am {de(retrieved_date(j))} · Angaben ohne Gewähr</p>')
+
+
+def ad_label(j):
+    return '<span class="ad-label">Anzeige</span>' if j.get('featured') is True else ''
+
+
 def job_card(j):
     badges = f'<span class="badge">{escape(j["type"])}</span>' + (f'<span class="badge">{j["country"]}</span>' if j.get('country') in ('AT', 'CH') else '') \
         + ('<span class="badge remote">Homeoffice</span>' if j.get('remote') else '')
     data = (f' data-search="{escape(" ".join([j["title"], j["company"], j.get("city") or "", j.get("region") or ""] + j.get("ai_terms", [])).lower())}"'
             f' data-fields="{escape("|".join(j.get("fields", [])))}" data-remote="{1 if j.get("remote") else 0}"')
-    return (f'<article class="card"{data}><div class="badges">{badges}</div><h3><a href="{j["page"]}">{escape(j["title"])}</a></h3>'
+    return (f'<article class="card{" featured" if j.get("featured") is True else ""}"{data}><div class="badges">{badges}{ad_label(j)}</div><h3><a href="{j["page"]}">{escape(j["title"])}</a></h3>'
             f'<p class="company">{escape(j["company"])}</p><p>{escape(loc_text(j))}</p><time datetime="{escape(j["date"])}">{de(j["date"])}</time>'
-            f'<a href="{escape(j["url"])}" target="_blank" rel="noopener noreferrer">{escape(j.get("source_label") or "Zur Stelle bei " + j["company"])} ↗</a></article>')
+            f'{source_note(j)}<a class="button" href="{escape(j["url"])}" target="_blank" rel="noopener noreferrer">Zur Originalanzeige ↗</a></article>')
 
 
 def filter_bar(items):
@@ -192,8 +224,7 @@ def job_posting(j, texts, extra, company_urls, site_url, brand):
           'datePosted': j['date'], 'hiringOrganization': org, 'employmentType': employment_types(j, extra),
           'directApply': False, 'url': f"{site_url}/{j['page']}",
           'identifier': {'@type': 'PropertyValue', 'name': j['company'], 'value': j['id']}}
-    if j.get('valid_through'):
-        ld['validThrough'] = j['valid_through']
+    ld['validThrough'] = j.get('valid_through') or (date.fromisoformat(retrieved_date(j)) + timedelta(days=30)).isoformat()
     if j.get('city') or not j.get('remote'):
         addr = {'@type': 'PostalAddress', 'addressCountry': country}
         if j.get('city'):
@@ -210,14 +241,19 @@ def job_posting(j, texts, extra, company_urls, site_url, brand):
 
 
 def generate(site, root, jobs, companies, page, brand, site_url):
-    today = datetime.now().date().isoformat()
+    today = datetime.now(ZoneInfo('Europe/Berlin')).date().isoformat()
+    jobs[:] = [j for j in jobs if not is_expired(j)]
+    stats_path = root / 'data' / 'stats.json'
+    stats = json.loads(stats_path.read_text(encoding='utf-8')) if stats_path.exists() else {}
+    for j in jobs:
+        j['retrieved'] = retrieved_date(j, stats.get('generated_at'))
     texts, extra = load_texts(root, jobs)
     (site / 'data' / 'job_texts.json').write_text(json.dumps({'texts': texts, 'extra': extra}, ensure_ascii=False), encoding='utf-8')
     company_urls = {c['name']: c.get('careers_url') for c in companies if c.get('careers_url')}
     for j in jobs:
         j['page'] = job_path(j)
         j['fields'] = job_fields(j)
-    sitemap = [('', today), ('quellen.html', today), ('stelle-veroeffentlichen.html', today)]
+    sitemap = [('', today), ('quellen.html', today), ('stelle-veroeffentlichen.html', today), ('entfernen/', today)]
     noindex_pages = []
 
     # Landing pages
@@ -312,11 +348,12 @@ def generate(site, root, jobs, companies, page, brand, site_url):
         terms = ''.join(f'<span class="badge">{escape(t)}</span>' for t in j.get('ai_terms', [])[:8])
         text = texts.get(j['id'])
         body = (f'<nav class="crumbs" aria-label="Brotkrumen"><a href="./">{escape(brand)}</a> › Stelle</nav>'
-                f'<article class="job-detail"><p class="eyebrow">{escape(j["type"].upper())}</p><h1 class="job-title">{escape(j["title"])}</h1>'
+                f'<article class="job-detail{" featured" if j.get("featured") is True else ""}">{ad_label(j)}<p class="eyebrow">{escape(j["type"].upper())}</p><h1 class="job-title">{escape(j["title"])}</h1>'
                 f'<p class="company">{escape(j["company"])} · {escape(loc_text(j))} · seit {de(j["date"])}</p>'
                 + (f'<div class="badges">{terms}</div>' if terms else '')
                 + (f'<h2>Auszug aus der Anzeige</h2><p>{escape(text)}</p>' if text else '')
-                + f'<p><a class="button" href="{escape(j["url"])}" target="_blank" rel="noopener noreferrer">{escape(j.get("source_label") or "Zur Stelle bei " + j["company"])} ↗</a></p>'
+                + source_note(j)
+                + f'<p><a class="button" href="{escape(j["url"])}" target="_blank" rel="noopener noreferrer">Zur Originalanzeige ↗</a></p>'
                 '<p class="note">Bewerbung immer direkt beim Unternehmen. Maßgeblich ist die Originalanzeige; Angaben ohne Gewähr.</p></article>'
                 + (f'<section class="links"><h2>Ähnliche Stellen</h2><ul class="link-list">{rel}</ul></section>' if rel else ''))
         desc = f"{j['type']} bei {j['company']}" + (f" in {j['city']}" if j.get('city') else '') + f": {j['title']}. Jetzt direkt beim Unternehmen bewerben."

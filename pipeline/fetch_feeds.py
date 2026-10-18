@@ -5,6 +5,9 @@ import json
 import os
 import re
 import time
+import threading
+from zoneinfo import ZoneInfo
+from optout import is_opted_out
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -15,9 +18,11 @@ from urllib.request import Request, urlopen
 from common import ROOT, write_json
 from geo import locate, COUNTRY, key, fill_region, REGION_CODE, region_from_plz
 
-UA = 'KI-Einstieg-Feedreader/0.1 (privates Projekt; Prototyp)'
+UA = 'KI-Laufbahn-Bot/1.0 (+mailto:tushimack@gmail.com)'
 CACHE = ROOT / 'data/feeds_cache'
-_last = None
+_last = threading.local()
+_host_last = {}
+_request_lock = threading.Lock()
 DETAILS = 0
 DETAIL_ERRORS = []
 
@@ -46,11 +51,16 @@ def read_json(path, default):
 
 
 def request(url, headers):
-    global _last
     for attempt in range(3):
-        if _last is not None: time.sleep(max(0, float(os.environ.get('FEED_SLEEP', '1')) - (time.monotonic() - _last)))
+        host = urlsplit(url).hostname
+        # Slot pro Host unter Lock reservieren, aber außerhalb des Locks schlafen (Spuren bleiben parallel).
+        with _request_lock:
+            now = time.monotonic()
+            start = max(now, getattr(_last, 'at', now - 86400) + float(os.environ.get('FEED_SLEEP', '1')),
+                        _host_last.get(host, now - 86400) + float(os.environ.get('FEED_HOST_SLEEP', '1.0')))
+            _last.at = _host_last[host] = start
+        time.sleep(max(0, start - time.monotonic()))
         try:
-            _last = time.monotonic()
             with urlopen(Request(url, headers={'User-Agent': UA, **headers}), timeout=20) as response:
                 return response.read(), response.status, dict(response.headers)
         except HTTPError as exc:
@@ -108,12 +118,12 @@ def date(value):
     return str(value or '')[:10]
 
 
-def row(company, identifier, title, locations, country='', remote=False, published='', url='', description='', employment='', seniority='', personio=False, region_hint='', ref='', default=True):
+def row(company, identifier, title, locations, country='', remote=False, published='', url='', description='', employment='', seniority='', personio=False, region_hint='', ref='', default=True, valid_through=''):
     geo = locate(locations, country, remote, personio, COUNTRY.get(key(company.get('hq_country', ''))) in ('DE', 'AT', 'CH'))
     if not geo: return None
     city, country, region = geo
     if country == 'DE': region = fill_region(city, region_hint if REGION_CODE.get(key(region_hint or '')) else region)
-    return dict(id=f"{company['ats']}:{company['slug']}:{identifier}", title=title or '', company=company['name'], company_slug=company['slug'], ats=company['ats'], city=city, country=country, region=region, remote=bool(remote), date=date(published), url=url, description=plain(description), employment_type=str(employment or ''), seniority=str(seniority or ''), ref=str(ref or ''), default_ad=bool(default))
+    return dict(id=f"{company['ats']}:{company['slug']}:{identifier}", title=title or '', company=company['name'], company_slug=company['slug'], ats=company['ats'], city=city, country=country, region=region, remote=bool(remote), date=date(published), url=url, description=plain(description), employment_type=str(employment or ''), seniority=str(seniority or ''), ref=str(ref or ''), default_ad=bool(default), valid_through=date(valid_through))
 
 
 def personio(c, payload):
@@ -170,7 +180,7 @@ def ashby(c, payload):
 
 def recruitee(c, payload):
     for p in payload['offers']:
-        yield row(c, p['id'], p['title'], [p.get('city', '')], p.get('country_code', ''), p.get('remote', False), p.get('published_at'), p.get('careers_url'), (p.get('description') or '') + ' ' + (p.get('requirements') or ''), p.get('employment_type_code'))
+        yield row(c, p['id'], p['title'], [p.get('city', '')], p.get('country_code', ''), p.get('remote', False), p.get('published_at'), p.get('careers_url'), (p.get('description') or '') + ' ' + (p.get('requirements') or ''), p.get('employment_type_code'), valid_through=p.get('close_at'))
 
 
 def workable(c, payload):
@@ -219,6 +229,7 @@ ADAPTERS = {f.__name__: f for f in (personio, greenhouse, lever, smartrecruiters
 def main():
     companies = read_json(ROOT / os.environ.get('COMPANIES_FILE', 'data/companies.json'), None)
     if not isinstance(companies, list): raise SystemExit('Unternehmensdatei fehlt oder ist ungültig (COMPANIES_FILE).')
+    companies = [c for c in companies if not is_opted_out(c)]
     # Parallel "Spuren": je ATS-Host eine (Personio/Greenhouse mehrere), innerhalb einer Spur sequenziell und höflich.
     # SmartRecruiters bleibt in genau einer Spur (DETAIL_ERRORS/DETAILS sind global).
     lanes = {}
@@ -235,7 +246,7 @@ def main():
         signature = hashlib.sha256(json.dumps([[c['ats'], c['slug'], c['endpoint']] for _, c in items]).encode()).hexdigest()
         ckpt = lane_dir / (name.replace(':', '_') + '.json')
         saved = read_json(ckpt, {})
-        if os.environ.get('RESUME', '1') == '1' and saved.get('signature') == signature and time.time() - saved.get('at', 0) < float(os.environ.get('FEED_MAX_AGE_H', '20')) * 3600:
+        if saved.get('retrieved_version') == 1 and os.environ.get('RESUME', '1') == '1' and saved.get('signature') == signature and time.time() - saved.get('at', 0) < float(os.environ.get('FEED_MAX_AGE_H', '20')) * 3600:
             print(f'Spur {name}: Checkpoint übernommen ({len(items)} Feeds)', flush=True)
             return [tuple(x) for x in saved['out']]
         out = []
@@ -255,7 +266,14 @@ def main():
                         stale |= old
                         if not more['content']: break  # totalFound zählt teils nicht-öffentliche Stellen
                         postings.extend(ADAPTERS[c['ats']](c, more)); offset += len(more['content'])
-                selected = [p for p in postings if p]
+                if c['ats'] == 'successfactors':
+                    meta_paths = [CACHE / f'{stem}_q{i}.xml.meta.json' for i in range(len(SF_QUERIES))]
+                else:
+                    meta_paths = [CACHE / (stem + ('.xml' if c['ats'] == 'personio' else '.json') + '.meta.json')]
+                fetched = [read_json(path, {}).get('fetched_at') for path in meta_paths]
+                fetched = [v for v in fetched if isinstance(v, (int, float)) and v > 0]
+                retrieved = (datetime.fromtimestamp(max(fetched), ZoneInfo('Europe/Berlin')) if fetched else datetime.now(ZoneInfo('Europe/Berlin'))).date().isoformat()
+                selected = [dict(p, retrieved=retrieved) for p in postings if p]
                 # SmartRecruiters: DE/EN-Sprachvarianten teilen die refNumber – nur die Standardanzeige behalten
                 by_ref = {}
                 for p in sorted(selected, key=lambda r: not r.get('default_ad', True)):
@@ -269,7 +287,7 @@ def main():
             except (ValueError, KeyError, TypeError, AttributeError, OSError, ET.ParseError) as exc:
                 record.update(status='error'); record['errors'].append(str(exc))
             out.append((i, record, selected))
-        write_json(ckpt, dict(signature=signature, at=time.time(), out=out))
+        write_json(ckpt, dict(signature=signature, at=time.time(), out=out, retrieved_version=1))
         print(f'Spur {name}: fertig ({len(items)} Feeds, {sum(len(x[2]) for x in out)} DACH-Stellen)', flush=True)
         return out
 

@@ -1,0 +1,6 @@
+{
+  "_comment": "Ausschlussliste: slugs aus companies.json, domains als Hostnamen einschließlich Subdomains, names als exakte Firmennamen (ohne Beachtung der Groß-/Kleinschreibung).",
+  "slugs": [],
+  "domains": [],
+  "names": []
+}

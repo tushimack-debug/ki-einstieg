@@ -11,6 +11,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'pipeline'))
+from optout import is_opted_out
+
 SITE = Path(sys.argv[1] if len(sys.argv) > 1 else os.environ.get('SITE_DIR', ROOT / 'site'))
 ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23144948'/%3E%3Ctext x='10' y='44' font-size='36' fill='white'%3EKI%3C/text%3E%3C/svg%3E"
 ATS = 'Personio, Greenhouse, Lever, SmartRecruiters, Ashby, Recruitee, Workable, SAP SuccessFactors (RSS)'
@@ -48,6 +51,7 @@ DATENSCHUTZ = (
     '<h2>3. Keine Cookies, kein Tracking</h2>'
     '<p>Diese Website setzt keine Cookies, verwendet keine Analyse- oder Tracking-Dienste und bindet keine externen Schriften, Skripte oder Inhalte '
     'von Drittanbietern ein. Nur wenn Sie das Newsletter-Formular absenden, wird Ihre Eingabe an Brevo übermittelt (siehe Abschnitt 6). Die Stellenfilter laufen vollständig lokal in Ihrem Browser.</p>'
+    '<p>Die Schrift wird lokal über Systemschriften geladen; es werden keine Google Fonts oder anderen externen Einbettungen verwendet.</p>'
     '<h2>4. Externe Links</h2>'
     '<p>Stellenanzeigen verlinken auf die Seiten der jeweiligen Arbeitgeber. Erst wenn Sie einen solchen Link anklicken, werden Daten an den '
     'jeweiligen Anbieter übertragen; dafür gilt dessen Datenschutzerklärung.</p>'
@@ -118,7 +122,7 @@ def page(title, body, *, path='', description=None, robots='index,follow', jsonl
 <base href="{BASE}"><title>{escape(full)}</title>{meta}
 <link rel="icon" href="{ICON}"><link rel="stylesheet" href="assets/style.css">{ld}</head>
 <body><header class="wrap"><a class="brand" href="./">{escape(BRAND)}<span aria-hidden="true"> ↗</span></a><nav aria-label="Hauptnavigation"><a href="./#stellen">Stellen entdecken</a><a href="./#events">Hackathons</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></header>
-<main class="wrap">{body}</main><footer class="wrap"><p>{escape(BRAND)}: Stellen aus den öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen ({ATS}). Alle Rechte an den Anzeigen liegen bei den jeweiligen Unternehmen. Bewerbung immer direkt beim Unternehmen.</p><nav aria-label="Rechtliches"><a href="quellen.html">Quellen</a><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></footer></body></html>'''
+<main class="wrap">{body}</main><footer class="wrap"><p>{escape(BRAND)}: Stellen aus den öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen ({ATS}). Alle Rechte an den Anzeigen liegen bei den jeweiligen Unternehmen. Bewerbung immer direkt beim Unternehmen.</p><nav aria-label="Rechtliches"><a href="entfernen/">Eintrag entfernen</a><a href="quellen.html">Quellen</a><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></footer></body></html>'''
 
 
 def newsletter_html(action):
@@ -160,6 +164,11 @@ def main():
     events = load('events.json', [])
     companies = load('companies.json', [])
     stats = load('stats.json', {})
+    excluded_names = {c['name'].casefold() for c in companies if is_opted_out(c)}
+    companies = [c for c in companies if not is_opted_out(c)]
+    jobs = [j for j in jobs if not is_opted_out(j) and j['company'].casefold() not in excluded_names and not seo.is_expired(j)]
+    for j in jobs:
+        j['retrieved'] = seo.retrieved_date(j, stats.get('generated_at'))
     today = datetime.now().date().isoformat()
     events = sorted((e for e in events if (e.get('end') or e.get('start') or '') >= today), key=lambda e: e['start'])
     SITE.mkdir(parents=True, exist_ok=True)
@@ -198,7 +207,7 @@ def main():
     city_opts = [c for c, n in city_count.most_common() if n >= 2]
     field_opts = [f for f, _ in Counter(f for j in jobs for f in j.get('fields', [])).most_common()]
     newsletter_section = newsletter_html(load('newsletter.json', {}).get('form_action', ''))
-    slim = [{k: j.get(k) for k in ('title', 'company', 'city', 'region', 'type', 'remote', 'date', 'url', 'country', 'source_label', 'page', 'fields', 'ai_terms')} for j in jobs]
+    slim = [{k: j.get(k) for k in ('title', 'company', 'city', 'region', 'type', 'remote', 'date', 'url', 'country', 'source_label', 'page', 'fields', 'ai_terms', 'retrieved', 'ats', 'featured')} for j in jobs]
     data = json.dumps(slim, ensure_ascii=False).replace('</', '<\\/').replace('&', '\\u0026')
     body = f'''<section class="hero"><p class="eyebrow">DEIN NÄCHSTER SCHRITT</p><h1>{escape(BRAND_CFG['slogan'])}</h1><p class="tagline">Werkstudent, Praktikum, Abschlussarbeit &amp; Ausbildung in KI – in Deutschland, Österreich und der Schweiz.</p><div class="metrics"><p><strong>{len(jobs)}</strong> Stellen</p><p><strong>{firms}</strong> Unternehmen</p><p><strong>{cities}</strong> Städte</p><p><strong>{updated}</strong> Letzte Aktualisierung</p></div></section>
 <section id="stellen"><h2>Finde deinen Platz in der KI.</h2><form id="filters" class="filters"><label>Typ<select id="type"><option value="">Alle Typen</option>{options(types)}</select></label><label>Stadt<select id="city"><option value="">Alle Städte</option>{options(city_opts)}</select></label><label>Region<select id="region"><option value="">Alle Regionen</option>{options(regions)}</select></label><label>Fachgebiet<select id="field"><option value="">Alle Fachgebiete</option>{options(field_opts)}</select></label><label class="search">Suche: Titel, Firma, Ort oder Thema<input id="search" type="search" placeholder="z. B. LLM, Bosch oder Hamburg"></label><label class="check"><input id="remote" type="checkbox"> Remote/Homeoffice</label><label class="check"><input id="recent" type="checkbox"> Nur letzte 14 Tage</label></form><p id="result-count" role="status" aria-live="polite"></p><div id="jobs" class="grid"></div><button id="load-more" type="button" hidden>Mehr laden</button><noscript><p>Bitte JavaScript für die Stellenfilter aktivieren. Alle Stellen stehen auch als <a href="data/jobs.json">JSON-Datei</a> bereit.</p></noscript></section>
@@ -225,6 +234,16 @@ def main():
                '<article class="card"><h2>Premium</h2><p class="price">149 €</p><p>90 Tage, oben angepinnt, Newsletter + Social Post</p></article></div>'
                '<p>Alle Preise netto zzgl. MwSt.</p><p>Kostenlose Einträge für Hochschulen und gemeinnützige Hackathons.</p><p>Kontakt: ' + MAIL + '</p>')
     (SITE / 'stelle-veroeffentlichen.html').write_text(page('Stelle veröffentlichen', path='stelle-veroeffentlichen.html', body=pricing), encoding='utf-8')
+    removal = (f'<h1>Eintrag entfernen oder korrigieren</h1><p>Unternehmen können die Entfernung ihrer Stellenanzeigen oder ihres gesamten Feeds '
+               f'bei {escape(BRAND)} sowie Korrekturen per E-Mail anfordern: '
+               f'<a href="mailto:{CONTACT}?subject=Entfernung%20KI-Laufbahn">{CONTACT}</a>. '
+               'Bitte nennen Sie das Unternehmen und die betroffene URL.</p>'
+               '<p>Wir entfernen die Einträge innerhalb von 48 Stunden nach Eingang Ihrer Anfrage und nehmen das Unternehmen in unsere '
+               'Ausschlussliste auf, damit es nicht erneut importiert wird.</p>'
+               f'<p>Für die Aufnahme Ihres Unternehmens oder Feeds in {escape(BRAND)} schreiben Sie ebenfalls an diese Adresse '
+               'und nennen Sie den Firmennamen und die URL Ihrer Karriereseite bzw. Ihres öffentlichen Job-Feeds.</p>')
+    (SITE / 'entfernen').mkdir(exist_ok=True)
+    (SITE / 'entfernen' / 'index.html').write_text(page('Eintrag entfernen oder korrigieren', removal, path='entfernen/'), encoding='utf-8')
     (SITE / 'impressum.html').write_text(page('Impressum', IMPRESSUM, path='impressum.html', robots='noindex,follow'), encoding='utf-8')
     anon = load('newsletter.json', {}).get('tracking_anonymous') is True
     tracking = ('Wir haben deshalb in Brevo die anonyme Messung aktiviert: ' if anon else
