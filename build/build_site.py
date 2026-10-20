@@ -48,10 +48,14 @@ DATENSCHUTZ = (
     '<p>Dabei kann eine Übermittlung personenbezogener Daten in die USA erfolgen. GitHub ist unter dem EU-US Data Privacy Framework zertifiziert; '
     'die Übermittlung stützt sich auf den Angemessenheitsbeschluss der EU-Kommission (Art. 45 DSGVO). Weitere Informationen: '
     '<a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub General Privacy Statement</a>.</p>'
-    '<h2>3. Keine Cookies, kein Tracking</h2>'
-    '<p>Diese Website setzt keine Cookies, verwendet keine Analyse- oder Tracking-Dienste und bindet keine externen Schriften, Skripte oder Inhalte '
-    'von Drittanbietern ein. Nur wenn Sie das Newsletter-Formular absenden, wird Ihre Eingabe an Brevo übermittelt (siehe Abschnitt 6). Die Stellenfilter laufen vollständig lokal in Ihrem Browser.</p>'
-    '<p>Die Schrift wird lokal über Systemschriften geladen; es werden keine Google Fonts oder anderen externen Einbettungen verwendet.</p>'
+    '<h2>3. Keine Cookies, Reichweitenmessung mit GoatCounter</h2>'
+    '<p>Diese Website setzt keine Cookies und bindet keine externen Schriften oder Inhalte von Drittanbietern ein; die Schrift wird lokal über Systemschriften geladen (keine Google Fonts). '
+    'Die einzige Ausnahme ist die unten beschriebene Reichweitenmessung. Nur wenn Sie das Newsletter-Formular absenden, wird Ihre Eingabe an Brevo übermittelt (siehe Abschnitt 6). Die Stellenfilter laufen vollständig lokal in Ihrem Browser.</p>'
+    '<p><strong>GoatCounter.</strong> Zur Messung der Seitenaufrufe nutzen wir GoatCounter (Anbieter: Martin Tournoij / Arp242, GoatCounter, <a href="https://www.goatcounter.com">goatcounter.com</a>). '
+    'Das Zählskript liegt lokal auf dieser Website; beim Seitenaufruf sendet Ihr Browser eine Zählanfrage an kilaufbahn.goatcounter.com mit aufgerufener Seite, Referrer, Browser-Kennung (User-Agent), Bildschirmgröße und ungefährem Land. '
+    'GoatCounter setzt keine Cookies, erstellt keine personenbezogenen Profile und speichert die IP-Adresse nicht; zur Erkennung eindeutiger Besuche wird lediglich ein kurzlebiger, nicht rückführbarer Hash verwendet. '
+    'Rechtsgrundlage ist unser berechtigtes Interesse an einer datensparsamen Reichweitenmessung (Art. 6 Abs. 1 lit. f DSGVO). '
+    'Details: <a href="https://www.goatcounter.com/help/privacy">Datenschutzerklärung von GoatCounter</a>.</p>'
     '<h2>4. Externe Links</h2>'
     '<p>Stellenanzeigen verlinken auf die Seiten der jeweiligen Arbeitgeber. Erst wenn Sie einen solchen Link anklicken, werden Daten an den '
     'jeweiligen Anbieter übertragen; dafür gilt dessen Datenschutzerklärung.</p>'
@@ -120,7 +124,7 @@ def page(title, body, *, path='', description=None, robots='index,follow', jsonl
     return f'''<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <base href="{BASE}"><title>{escape(full)}</title>{meta}
-<link rel="icon" href="{ICON}"><link rel="stylesheet" href="assets/style.css">{ld}</head>
+<link rel="icon" href="{ICON}"><link rel="stylesheet" href="assets/style.css"><script data-goatcounter="https://kilaufbahn.goatcounter.com/count" async src="assets/count.js"></script>{ld}</head>
 <body><header class="wrap"><a class="brand" href="./">{escape(BRAND)}<span aria-hidden="true"> ↗</span></a><nav aria-label="Hauptnavigation"><a href="./#stellen">Stellen entdecken</a><a href="./#events">Hackathons</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></header>
 <main class="wrap">{body}</main><footer class="wrap"><p>{escape(BRAND)}: Stellen aus den öffentlichen Karriere-Seiten bzw. Job-Feeds der Unternehmen ({ATS}). Alle Rechte an den Anzeigen liegen bei den jeweiligen Unternehmen. Bewerbung immer direkt beim Unternehmen.</p><nav aria-label="Rechtliches"><a href="entfernen/">Eintrag entfernen</a><a href="quellen.html">Quellen</a><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="stelle-veroeffentlichen.html">Stelle veröffentlichen</a></nav></footer></body></html>'''
 
