@@ -10,8 +10,12 @@ urls = re.findall(r'<loc>([^<]+)</loc>', xml)
 body = json.dumps({'host': site.split('/')[2], 'key': key, 'keyLocation': f'{site}/{key}.txt', 'urlList': urls}).encode()
 req = urllib.request.Request('https://api.indexnow.org/indexnow', data=body, method='POST',
                              headers={**UA, 'Content-Type': 'application/json; charset=utf-8'})
-try:
-    with urllib.request.urlopen(req, timeout=30) as r: status = r.status
-except urllib.error.HTTPError as e: status = e.code
+import time
+for attempt in range(3):  # 403 direkt nach Deploy: Key-Datei noch nicht ausgeliefert -> später erneut
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r: status = r.status
+    except urllib.error.HTTPError as e: status = e.code
+    if status != 403: break
+    time.sleep(60)
 print(f'IndexNow: {len(urls)} URLs -> HTTP {status}')
 sys.exit(0 if status in (200, 202) else 1)
