@@ -372,6 +372,10 @@ def generate(site, root, jobs, companies, page, brand, site_url):
 
     urls = ''.join(f'<url><loc>{escape(site_url)}/{escape(p)}</loc><lastmod>{d}</lastmod></url>' for p, d in sitemap)
     (site / 'sitemap.xml').write_text(f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n', encoding='utf-8')
+    key_cfg = root / 'data' / 'indexnow.json'
+    if key_cfg.exists():
+        key = json.loads(key_cfg.read_text(encoding='utf-8'))['key']
+        (site / f'{key}.txt').write_text(key, encoding='utf-8')
     (site / 'robots.txt').write_text(f'User-agent: *\nAllow: /\n\nSitemap: {site_url}/sitemap.xml\n', encoding='utf-8')
 
     index_links = [(k, v) for k, v in landing.items() if v['index']]

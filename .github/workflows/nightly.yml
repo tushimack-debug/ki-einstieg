@@ -99,6 +99,7 @@ jobs:
     if: vars.PAGES_ENABLED == 'true'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
@@ -107,3 +108,7 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+      - name: IndexNow ping (Bing, Yandex)
+        continue-on-error: true
+        run: sleep 30 && python3 pipeline/indexnow.py
